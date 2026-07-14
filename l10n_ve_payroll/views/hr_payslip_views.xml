@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_payslip_form_inherit_l10n_ve_payroll" model="ir.ui.view">
+        <field name="name">hr.payslip.view.form.inherit.l10n.ve.payroll</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert currency rate fields inside the main group under payslip_run_id -->
+            <xpath expr="//field[@name='payslip_run_id']" position="after">
+                <field name="l10n_ve_bcv_rate" string="Tasa BCV (VES/USD)" />
+                <field name="wage_in_currency" string="Sueldo Pactado" readonly="1" force_save="1" />
+                <field name="wage_in_ves" string="Sueldo en VES (BCV)" readonly="1" force_save="1" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

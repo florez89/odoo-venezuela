@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- IVSS (Seguro Social) - Trabajador (Deducción 4%) -->
+        <record id="hr_salary_rule_ve_ivss_trabajador" model="hr.salary.rule">
+            <field name="name">Deducción IVSS (4%)</field>
+            <field name="code">DED_IVSS</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">101</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    mondays = payslip._get_mondays_in_period(payslip.date_from, payslip.date_to)
+    weekly_wage = (payslip.wage_in_ves * 12.0) / 52.0
+    weekly_ceiling = (param.ivss_limit_weeks * param.salario_minimo * 12.0) / 52.0
+    weekly_base = min(weekly_wage, weekly_ceiling)
+    result = - (weekly_base * (param.ivss_employee_rate / 100.0) * mondays)
+            </field>
+        </record>
+
+        <!-- SPF (Paro Forzoso) - Trabajador (Deducción 0.5%) -->
+        <record id="hr_salary_rule_ve_spf_trabajador" model="hr.salary.rule">
+            <field name="name">Deducción SPF (0.5%)</field>
+            <field name="code">DED_SPF</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">102</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    mondays = payslip._get_mondays_in_period(payslip.date_from, payslip.date_to)
+    weekly_wage = (payslip.wage_in_ves * 12.0) / 52.0
+    weekly_ceiling = (param.spf_limit_weeks * param.salario_minimo * 12.0) / 52.0
+    weekly_base = min(weekly_wage, weekly_ceiling)
+    result = - (weekly_base * (param.spf_employee_rate / 100.0) * mondays)
+            </field>
+        </record>
+
+        <!-- FAOV (Aporte Vivienda) - Trabajador (Deducción 1.0%) -->
+        <record id="hr_salary_rule_ve_faov_trabajador" model="hr.salary.rule">
+            <field name="name">Deducción FAOV (1.0%)</field>
+            <field name="code">DED_FAOV</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">103</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    gross = categories.get('GROSS', 0.0) or payslip.wage_in_ves
+    result = - (gross * (param.faov_employee_rate / 100.0))
+            </field>
+        </record>
+
+        <!-- IVSS (Seguro Social) - Patrono (Aporte 9%) -->
+        <record id="hr_salary_rule_ve_ivss_patrono" model="hr.salary.rule">
+            <field name="name">Aporte IVSS Patrono (9%)</field>
+            <field name="code">APO_IVSS</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">201</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    mondays = payslip._get_mondays_in_period(payslip.date_from, payslip.date_to)
+    weekly_wage = (payslip.wage_in_ves * 12.0) / 52.0
+    weekly_ceiling = (param.ivss_limit_weeks * param.salario_minimo * 12.0) / 52.0
+    weekly_base = min(weekly_wage, weekly_ceiling)
+    result = (weekly_base * (param.ivss_employer_rate / 100.0) * mondays)
+            </field>
+        </record>
+
+        <!-- SPF (Paro Forzoso) - Patrono (Aporte 2%) -->
+        <record id="hr_salary_rule_ve_spf_patrono" model="hr.salary.rule">
+            <field name="name">Aporte SPF Patrono (2%)</field>
+            <field name="code">APO_SPF</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">202</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    mondays = payslip._get_mondays_in_period(payslip.date_from, payslip.date_to)
+    weekly_wage = (payslip.wage_in_ves * 12.0) / 52.0
+    weekly_ceiling = (param.spf_limit_weeks * param.salario_minimo * 12.0) / 52.0
+    weekly_base = min(weekly_wage, weekly_ceiling)
+    result = (weekly_base * (param.spf_employer_rate / 100.0) * mondays)
+            </field>
+        </record>
+
+        <!-- FAOV (Aporte Vivienda) - Patrono (Aporte 2%) -->
+        <record id="hr_salary_rule_ve_faov_patrono" model="hr.salary.rule">
+            <field name="name">Aporte FAOV Patrono (2%)</field>
+            <field name="code">APO_FAOV</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">203</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    gross = categories.get('GROSS', 0.0) or payslip.wage_in_ves
+    result = (gross * (param.faov_employer_rate / 100.0))
+            </field>
+        </record>
+
+        <!-- LPP (Ley de Protección de Pensiones) - Patrono (Aporte 9%) -->
+        <record id="hr_salary_rule_ve_lpp_patrono" model="hr.salary.rule">
+            <field name="name">Aporte LPP Patrono (9%)</field>
+            <field name="code">APO_LPP</field>
+            <field name="category_id" ref="hr_payroll.COMP"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">204</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    # Floor is param.pension_min_base USD indexed, converted to VES using the payslip's BCV rate
+    min_base_ves = param.pension_min_base * payslip.l10n_ve_bcv_rate
+    gross = categories.get('GROSS', 0.0) or payslip.wage_in_ves
+    calculation_base = max(gross, min_base_ves)
+    result = (calculation_base * (param.pension_rate / 100.0))
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista (Tree/List View) -->
+    <record id="view_l10n_ve_payroll_parameter_tree" model="ir.ui.view">
+        <field name="name">l10n_ve.payroll.parameter.tree</field>
+        <field name="model">l10n_ve.payroll.parameter</field>
+        <field name="arch" type="xml">
+            <list string="Parámetros de Nómina Venezuela">
+                <field name="name" />
+                <field name="company_id" groups="base.group_multi_company" />
+                <field name="date_start" />
+                <field name="date_end" />
+                <field name="salario_minimo" decoration-bf="1" />
+                <field name="unidad_tributaria" />
+                <field name="cestaticket_usd" />
+                <field name="pension_rate" string="Pensión %" />
+                <field name="pension_min_base" string="Piso Pensión (USD)" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form View) -->
+    <record id="view_l10n_ve_payroll_parameter_form" model="ir.ui.view">
+        <field name="name">l10n_ve.payroll.parameter.form</field>
+        <field name="model">l10n_ve.payroll.parameter</field>
+        <field name="arch" type="xml">
+            <form string="Parámetros de Nómina Venezuela">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" />
+                        <h1>
+                            <field name="name" placeholder="Ej. Parámetros Enero 2026" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Vigencia y Compañía">
+                            <field name="date_start" />
+                            <field name="date_end" />
+                            <field name="company_id" groups="base.group_multi_company" />
+                        </group>
+                        <group string="Bases Legales">
+                            <field name="salario_minimo" />
+                            <field name="unidad_tributaria" />
+                            <field name="cestaticket_usd" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Seguro Social (IVSS) y Empleo (SPF)">
+                            <group>
+                                <group string="Seguro Social Obligatorio (IVSS)">
+                                    <field name="ivss_employee_rate" string="Retención Trabajador (%)" />
+                                    <field name="ivss_employer_rate" string="Aporte Patronal (%)" />
+                                    <field name="ivss_limit_weeks" string="Tope Semanal (Salarios Mínimos)" />
+                                </group>
+                                <group string="Paro Forzoso / Empleo (SPF)">
+                                    <field name="spf_employee_rate" string="Retención Trabajador (%)" />
+                                    <field name="spf_employer_rate" string="Aporte Patronal (%)" />
+                                    <field name="spf_limit_weeks" string="Tope Semanal (Salarios Mínimos)" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Vivienda (FAOV) e INCES">
+                            <group>
+                                <group string="Fondo de Ahorro para Vivienda (FAOV)">
+                                    <field name="faov_employee_rate" string="Retención Trabajador (%)" />
+                                    <field name="faov_employer_rate" string="Aporte Patronal (%)" />
+                                </group>
+                                <group string="Capacitación INCES">
+                                    <field name="inces_employer_rate" string="Aporte Patronal (%)" />
+                                    <field name="inces_employee_rate" string="Retención Trabajador (Utilidades %)" />
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Ley de Protección de Pensiones 2024">
+                            <div class="alert alert-info" role="alert">
+                                <strong>Ley de Protección de las Pensiones de Seguridad Social:</strong> Promulgada en mayo de 2024. Establece una contribución obligatoria a cargo del patrono privado sobre la base de los ingresos mensuales totales del trabajador (salarios + bonos).
+                            </div>
+                            <group>
+                                <group string="Alícuota y Piso Mínimo">
+                                    <field name="pension_rate" string="Alícuota Patronal (%)" />
+                                    <field name="pension_min_base" string="Ingreso Mínimo de Referencia (USD)" />
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción del Menú (Action) -->
+    <record id="action_l10n_ve_payroll_parameter" model="ir.actions.act_window">
+        <field name="name">Parámetros de Nómina</field>
+        <field name="res_model">l10n_ve.payroll.parameter</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea los parámetros de nómina para Venezuela
+            </p>
+            <p>
+                Define los salarios mínimos, la Unidad Tributaria y los porcentajes de retención aplicables para cada periodo de tiempo.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menúes -->
+    <menuitem
+        id="menu_l10n_ve_payroll_configuration"
+        name="Localización Venezuela"
+        parent="hr_payroll.menu_hr_salary_configuration"
+        sequence="50"
+    />
+
+    <menuitem
+        id="menu_l10n_ve_payroll_parameter"
+        name="Parámetros de Nómina"
+        parent="menu_l10n_ve_payroll_configuration"
+        action="action_l10n_ve_payroll_parameter"
+        sequence="10"
+    />
+</odoo>

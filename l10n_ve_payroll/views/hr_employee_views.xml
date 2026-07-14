@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_l10n_ve_payroll" model="ir.ui.view">
+        <field name="name">hr.employee.view.form.inherit.l10n.ve.payroll</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert currency fields before the wage label to have proper separate rows -->
+            <xpath expr="//label[@for='wage']" position="before">
+                <field name="wage_currency_id" string="Moneda Pactada" />
+                <field name="wage_in_currency" string="Sueldo Pactado" />
+            </xpath>
+            <!-- Modify label of wage to indicate it is the converted amount in VES -->
+            <xpath expr="//field[@name='wage']" position="attributes">
+                <attribute name="string">Sueldo Equivalente (VES)</attribute>
+                <attribute name="readonly">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
