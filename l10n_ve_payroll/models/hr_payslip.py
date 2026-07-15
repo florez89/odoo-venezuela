@@ -77,3 +77,25 @@ class HrPayslip(models.Model):
             ('date_end', '>=', date)
         ], limit=1)
 
+    def _get_cestaticket_amount(self):
+        self.ensure_one()
+        param = self._get_active_ve_parameter()
+        if not param:
+            return 0.0
+        
+        # Base amount (USD converted to company currency using the BCV rate)
+        base_amount = param.cestaticket_usd * self.l10n_ve_bcv_rate
+        
+        if not self.worked_days_line_ids:
+            return base_amount
+            
+        # Sum of days worked/paid (excluding unpaid leaves like OUT)
+        worked_days_sum = sum(line.number_of_days for line in self.worked_days_line_ids if line.code != 'OUT')
+        total_planned_days = sum(line.number_of_days for line in self.worked_days_line_ids)
+        
+        if total_planned_days <= 0:
+            return base_amount
+            
+        proportion = min(worked_days_sum / total_planned_days, 1.0)
+        return base_amount * proportion
+

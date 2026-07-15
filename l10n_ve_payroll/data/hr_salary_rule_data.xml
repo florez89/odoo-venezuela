@@ -148,5 +148,19 @@ else:
     result = (calculation_base * (param.pension_rate / 100.0))
             </field>
         </record>
+
+        <!-- Bono de Alimentación (Cesta Ticket) - Asignación No Salarial -->
+        <record id="hr_salary_rule_ve_cestaticket" model="hr.salary.rule">
+            <field name="name">Bono de Alimentación (Cesta Ticket)</field>
+            <field name="code">BON_ALIM</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">150</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+result = payslip._get_cestaticket_amount()
+            </field>
+        </record>
     </data>
 </odoo>
