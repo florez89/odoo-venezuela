@@ -82,6 +82,20 @@
                                 </group>
                             </group>
                         </page>
+                        <page string="Vacaciones y Utilidades">
+                            <group>
+                                <group string="Vacaciones de Ley (LOTTT Art. 190, 192)">
+                                    <field name="vacation_days_base" string="Días de Vacaciones Base" />
+                                    <field name="vacation_days_max" string="Días de Vacaciones Máximo" />
+                                    <field name="vacation_bonus_days_base" string="Días Bono Vacacional Base" />
+                                    <field name="vacation_bonus_days_max" string="Días Bono Vacacional Máximo" />
+                                </group>
+                                <group string="Utilidades de Ley (LOTTT Art. 131)">
+                                    <field name="utilidades_days_min" string="Días Mínimos" />
+                                    <field name="utilidades_days_max" string="Días Máximos" />
+                                </group>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

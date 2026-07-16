@@ -99,3 +99,64 @@ class HrPayslip(models.Model):
         proportion = min(worked_days_sum / total_planned_days, 1.0)
         return base_amount * proportion
 
+    def _get_lottt_seniority_years(self):
+        self.ensure_one()
+        start_date = self.employee_id.contract_date_start
+        if not start_date:
+            return 0
+
+        date_target = self.date_to or fields.Date.context_today(self)
+        if start_date > date_target:
+            return 0
+        delta = date_target - start_date
+        return delta.days // 365
+
+    def _get_vacation_days(self):
+        self.ensure_one()
+        input_line = self.input_line_ids.filtered(lambda l: l.code == 'VAC_DAYS')
+        if not input_line:
+            return 0.0
+
+        if input_line[0].amount == 0.0:
+            param = self._get_active_ve_parameter()
+            if not param:
+                return 0.0
+            seniority = self._get_lottt_seniority_years()
+            if seniority < 1:
+                return 0.0
+            calculated_days = param.vacation_days_base + (seniority - 1)
+            return min(calculated_days, param.vacation_days_max)
+
+        return input_line[0].amount
+
+    def _get_vacation_bonus_days(self):
+        self.ensure_one()
+        input_line = self.input_line_ids.filtered(lambda l: l.code == 'BON_VAC_DAYS')
+        if not input_line:
+            return 0.0
+
+        if input_line[0].amount == 0.0:
+            param = self._get_active_ve_parameter()
+            if not param:
+                return 0.0
+            seniority = self._get_lottt_seniority_years()
+            if seniority < 1:
+                return 0.0
+            calculated_days = param.vacation_bonus_days_base + (seniority - 1)
+            return min(calculated_days, param.vacation_bonus_days_max)
+
+        return input_line[0].amount
+
+    def _get_utilidades_days(self):
+        self.ensure_one()
+        input_line = self.input_line_ids.filtered(lambda l: l.code == 'UTIL_DAYS')
+        if not input_line:
+            return 0.0
+
+        if input_line[0].amount == 0.0:
+            param = self._get_active_ve_parameter()
+            if not param:
+                return 0.0
+            return float(param.utilidades_days_min)
+
+        return input_line[0].amount

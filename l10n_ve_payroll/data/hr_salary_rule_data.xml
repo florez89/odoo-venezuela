@@ -172,7 +172,7 @@ result = payslip._get_cestaticket_amount()
             <field name="sequence" type="int">104</field>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">
+            <field name="amount_python_compute"><![CDATA[
 param = payslip._get_active_ve_parameter()
 if not param:
     result = 0.0
@@ -190,7 +190,7 @@ else:
         result = 0.0
     else:
         result = - (util_amount * (param.inces_employee_rate / 100.0))
-            </field>
+            ]]></field>
         </record>
 
         <!-- Aporte INCES Patrono (2%) -->
@@ -209,6 +209,60 @@ if not param:
 else:
     gross = categories.get('GROSS', 0.0) or payslip.wage_in_ves
     result = (gross * (param.inces_employer_rate / 100.0))
+            </field>
+        </record>
+
+        <!-- Vacaciones (Pago Días de Vacaciones) - Asignación (Categoría ALW) -->
+        <record id="hr_salary_rule_ve_vacaciones" model="hr.salary.rule">
+            <field name="name">Pago de Vacaciones</field>
+            <field name="code">VAC</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">11</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+inputs = payslip.input_line_ids.filtered(lambda l: l.code == 'VAC')
+if inputs:
+    result = inputs[0].amount
+else:
+    result = (payslip.wage_in_ves / 30.0) * payslip._get_vacation_days()
+            </field>
+        </record>
+
+        <!-- Bono Vacacional de Ley - Asignación (Categoría ALW) -->
+        <record id="hr_salary_rule_ve_bono_vacacional" model="hr.salary.rule">
+            <field name="name">Bono Vacacional</field>
+            <field name="code">BON_VAC</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">12</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+inputs = payslip.input_line_ids.filtered(lambda l: l.code == 'BON_VAC')
+if inputs:
+    result = inputs[0].amount
+else:
+    result = (payslip.wage_in_ves / 30.0) * payslip._get_vacation_bonus_days()
+            </field>
+        </record>
+
+        <!-- Utilidades / Aguinaldos - Asignación (Categoría ALW) -->
+        <record id="hr_salary_rule_ve_utilidades" model="hr.salary.rule">
+            <field name="name">Utilidades de Ley</field>
+            <field name="code">UTIL</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">13</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+inputs = payslip.input_line_ids.filtered(lambda l: l.code == 'UTIL')
+if inputs:
+    result = inputs[0].amount
+else:
+    result = (payslip.wage_in_ves / 30.0) * payslip._get_utilidades_days()
             </field>
         </record>
     </data>

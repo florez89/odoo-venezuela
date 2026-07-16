@@ -45,6 +45,16 @@ class L10nVePayrollParameter(models.Model):
     inces_employer_rate = fields.Float(string='INCES Aporte Patronal (%)', default=2.0, required=True)
     inces_employee_rate = fields.Float(string='INCES Retención Empleado (Utilidades %)', default=0.5, required=True)
 
+    # Vacaciones
+    vacation_days_base = fields.Integer(string='Días de Vacaciones Base', default=15, required=True)
+    vacation_days_max = fields.Integer(string='Días de Vacaciones Máximo', default=30, required=True)
+    vacation_bonus_days_base = fields.Integer(string='Días Bono Vacacional Base', default=15, required=True)
+    vacation_bonus_days_max = fields.Integer(string='Días Bono Vacacional Máximo', default=30, required=True)
+
+    # Utilidades
+    utilidades_days_min = fields.Integer(string='Días de Utilidades Mínimo', default=30, required=True)
+    utilidades_days_max = fields.Integer(string='Días de Utilidades Máximo', default=120, required=True)
+
     @api.constrains('date_start', 'date_end', 'company_id')
     def _check_date_overlaps(self):
         for rec in self:
