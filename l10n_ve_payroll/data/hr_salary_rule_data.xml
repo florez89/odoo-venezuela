@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
+        <!-- Categoría Informativa Personalizada -->
+        <record id="hr_salary_rule_category_info" model="hr.salary.rule.category">
+            <field name="name">Informativas</field>
+            <field name="code">INFO</field>
+        </record>
+
         <!-- IVSS (Seguro Social) - Trabajador (Deducción 4%) -->
         <record id="hr_salary_rule_ve_ivss_trabajador" model="hr.salary.rule">
             <field name="name">Deducción IVSS (4%)</field>
@@ -263,6 +269,42 @@ if inputs:
     result = inputs[0].amount
 else:
     result = (payslip.wage_in_ves / 30.0) * payslip._get_utilidades_days()
+            </field>
+        </record>
+
+        <!-- Garantía de Prestaciones (Informativa) -->
+        <record id="hr_salary_rule_ve_garantia_prestaciones" model="hr.salary.rule">
+            <field name="name">Garantía de Prestaciones (Informativa)</field>
+            <field name="code">GAR_PRES</field>
+            <field name="category_id" ref="hr_salary_rule_category_info"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">301</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
+    ('employee_id', '=', payslip.employee_id.id),
+    ('date', '=', payslip.date_to.replace(day=1))
+], limit=1)
+result = ledger.amount_garantia if ledger else 0.0
+            </field>
+        </record>
+
+        <!-- Intereses sobre Prestaciones (Informativa) -->
+        <record id="hr_salary_rule_ve_intereses_prestaciones" model="hr.salary.rule">
+            <field name="name">Intereses sobre Prestaciones (Informativa)</field>
+            <field name="code">INT_PRES</field>
+            <field name="category_id" ref="hr_salary_rule_category_info"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">302</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
+    ('employee_id', '=', payslip.employee_id.id),
+    ('date', '=', payslip.date_to.replace(day=1))
+], limit=1)
+result = ledger.amount_interest if ledger else 0.0
             </field>
         </record>
     </data>

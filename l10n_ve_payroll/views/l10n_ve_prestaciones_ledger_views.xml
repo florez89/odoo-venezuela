@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista (Tree/List View) -->
+    <record id="view_l10n_ve_prestaciones_ledger_tree" model="ir.ui.view">
+        <field name="name">l10n_ve.prestaciones.ledger.tree</field>
+        <field name="model">l10n_ve.prestaciones.ledger</field>
+        <field name="arch" type="xml">
+            <list string="Libro Auxiliar de Prestaciones" create="false" edit="false">
+                <field name="employee_id" />
+                <field name="date" string="Mes" />
+                <field name="salary_integral_daily" string="Salario Integral Diario" />
+                <field name="days_garantia" string="Días Garantía" sum="Total Días Garantía" />
+                <field name="amount_garantia" string="Monto Garantía" sum="Total Garantía" />
+                <field name="days_adicionales" string="Días Adicionales" sum="Total Días Adic." />
+                <field name="amount_adicionales" string="Monto Adicionales" sum="Total Adicionales" />
+                <field name="accumulated_balance" string="Acumulado Prestaciones" />
+                <field name="bcv_interest_rate" string="Tasa BCV (%)" />
+                <field name="amount_interest" string="Interés Mes" sum="Total Interés" />
+                <field name="accumulated_interest" string="Acumulado Intereses" />
+                <field name="state" string="Estado" widget="badge" decoration-success="state == 'posted'" decoration-info="state == 'draft'" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form View) -->
+    <record id="view_l10n_ve_prestaciones_ledger_form" model="ir.ui.view">
+        <field name="name">l10n_ve.prestaciones.ledger.form</field>
+        <field name="model">l10n_ve.prestaciones.ledger</field>
+        <field name="arch" type="xml">
+            <form string="Registro de Prestaciones Sociales">
+                <header>
+                    <field name="state" widget="statusbar" />
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Empleado y Período">
+                            <field name="employee_id" readonly="1" />
+                            <field name="date" readonly="1" />
+                            <field name="payslip_id" readonly="1" />
+                        </group>
+                        <group string="Bases de Cálculo">
+                            <field name="salary_integral_daily" readonly="1" />
+                            <field name="bcv_interest_rate" readonly="1" />
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Garantía de Prestaciones">
+                            <field name="days_garantia" readonly="1" />
+                            <field name="amount_garantia" readonly="1" />
+                        </group>
+                        <group string="Días Adicionales">
+                            <field name="days_adicionales" readonly="1" />
+                            <field name="amount_adicionales" readonly="1" />
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Saldos Acumulados de Prestaciones">
+                            <field name="previous_balance" readonly="1" />
+                            <field name="accumulated_balance" readonly="1" />
+                        </group>
+                        <group string="Intereses Ganados">
+                            <field name="amount_interest" readonly="1" />
+                            <field name="previous_accumulated_interest" readonly="1" />
+                            <field name="accumulated_interest" readonly="1" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción del Menú (Action) -->
+    <record id="action_l10n_ve_prestaciones_ledger" model="ir.actions.act_window">
+        <field name="name">Libro Auxiliar de Prestaciones</field>
+        <field name="res_model">l10n_ve.prestaciones.ledger</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros en el libro auxiliar
+            </p>
+            <p>
+                Los registros se generan de forma automática al confirmar o validar los recibos de nómina mensuales de los empleados.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem
+        id="menu_l10n_ve_prestaciones_ledger"
+        name="Libro de Prestaciones"
+        parent="menu_l10n_ve_payroll_configuration"
+        action="action_l10n_ve_prestaciones_ledger"
+        sequence="30"
+    />
+</odoo>

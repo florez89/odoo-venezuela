@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista (Tree/List View) -->
+    <record id="view_l10n_ve_prestaciones_rate_tree" model="ir.ui.view">
+        <field name="name">l10n_ve.prestaciones.rate.tree</field>
+        <field name="model">l10n_ve.prestaciones.rate</field>
+        <field name="arch" type="xml">
+            <list string="Tasas de Interés BCV para Prestaciones" editable="top">
+                <field name="date" />
+                <field name="name" string="Mes / Año" readonly="1" />
+                <field name="rate" string="Tasa de Interés (%)" decoration-bf="1" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form View) -->
+    <record id="view_l10n_ve_prestaciones_rate_form" model="ir.ui.view">
+        <field name="name">l10n_ve.prestaciones.rate.form</field>
+        <field name="model">l10n_ve.prestaciones.rate</field>
+        <field name="arch" type="xml">
+            <form string="Tasa de Interés BCV para Prestaciones">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date" />
+                            <field name="rate" />
+                        </group>
+                        <group>
+                            <field name="name" string="Mes / Año" readonly="1" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción del Menú (Action) -->
+    <record id="action_l10n_ve_prestaciones_rate" model="ir.actions.act_window">
+        <field name="name">Tasas de Interés BCV (Prestaciones)</field>
+        <field name="res_model">l10n_ve.prestaciones.rate</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea una nueva tasa de interés BCV
+            </p>
+            <p>
+                Define la tasa de interés activa fijada mensualmente por el Banco Central de Venezuela para las prestaciones sociales.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem
+        id="menu_l10n_ve_prestaciones_rate"
+        name="Tasas de Interés BCV"
+        parent="menu_l10n_ve_payroll_configuration"
+        action="action_l10n_ve_prestaciones_rate"
+        sequence="20"
+    />
+</odoo>

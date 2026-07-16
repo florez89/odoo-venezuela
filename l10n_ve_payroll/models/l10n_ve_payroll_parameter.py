@@ -55,6 +55,12 @@ class L10nVePayrollParameter(models.Model):
     utilidades_days_min = fields.Integer(string='Días de Utilidades Mínimo', default=30, required=True)
     utilidades_days_max = fields.Integer(string='Días de Utilidades Máximo', default=120, required=True)
 
+    # Prestaciones
+    prestaciones_method = fields.Selection([
+        ('monthly', 'Mensual (5 días/mes)'),
+        ('quarterly', 'Trimestral (15 días/trimestre)')
+    ], string='Esquema Garantía Prestaciones', default='monthly', required=True)
+
     @api.constrains('date_start', 'date_end', 'company_id')
     def _check_date_overlaps(self):
         for rec in self:

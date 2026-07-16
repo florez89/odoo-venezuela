@@ -58,3 +58,33 @@ class HrEmployee(models.Model):
         string="Sueldo Pactado",
         help="Monto del sueldo básico en la moneda pactada."
     )
+    l10n_ve_prestaciones_balance = fields.Float(
+        string='Acumulado Prestaciones',
+        compute='_compute_l10n_ve_prestaciones_totals',
+        digits=(16, 2),
+        help="Saldo total acumulado de las prestaciones sociales."
+    )
+    l10n_ve_prestaciones_interest = fields.Float(
+        string='Intereses Acumulados',
+        compute='_compute_l10n_ve_prestaciones_totals',
+        digits=(16, 2),
+        help="Total de intereses generados sobre prestaciones."
+    )
+    l10n_ve_prestaciones_ledger_ids = fields.One2many(
+        'l10n_ve.prestaciones.ledger',
+        'employee_id',
+        string='Registros de Prestaciones'
+    )
+
+    def _compute_l10n_ve_prestaciones_totals(self):
+        for employee in self:
+            latest_ledger = self.env['l10n_ve.prestaciones.ledger'].search([
+                ('employee_id', '=', employee.id),
+                ('state', '=', 'posted')
+            ], order='date desc', limit=1)
+            if latest_ledger:
+                employee.l10n_ve_prestaciones_balance = latest_ledger.accumulated_balance
+                employee.l10n_ve_prestaciones_interest = latest_ledger.accumulated_interest
+            else:
+                employee.l10n_ve_prestaciones_balance = 0.0
+                employee.l10n_ve_prestaciones_interest = 0.0

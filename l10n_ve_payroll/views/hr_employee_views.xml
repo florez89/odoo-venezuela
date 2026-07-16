@@ -15,6 +15,30 @@
                 <attribute name="string">Sueldo Equivalente (VES)</attribute>
                 <attribute name="readonly">1</attribute>
             </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Prestaciones Sociales (LOTTT)">
+                    <group>
+                        <group string="Resumen de Saldos (VES)">
+                            <field name="l10n_ve_prestaciones_balance" string="Acumulado Prestaciones" readonly="1" decoration-bf="1" />
+                            <field name="l10n_ve_prestaciones_interest" string="Intereses Acumulados" readonly="1" decoration-bf="1" />
+                        </group>
+                    </group>
+                    <field name="l10n_ve_prestaciones_ledger_ids" readonly="1" nolabel="1">
+                        <list string="Libro Auxiliar" create="false" delete="false" edit="false">
+                            <field name="date" string="Mes" />
+                            <field name="salary_integral_daily" string="Salario Integral Diario" />
+                            <field name="days_garantia" string="Días Garantía" />
+                            <field name="amount_garantia" string="Monto Garantía" />
+                            <field name="days_adicionales" string="Días Adicionales" />
+                            <field name="amount_adicionales" string="Monto Adicionales" />
+                            <field name="accumulated_balance" string="Acumulado Prestaciones" />
+                            <field name="bcv_interest_rate" string="Tasa BCV (%)" />
+                            <field name="amount_interest" string="Interés Mes" />
+                            <field name="accumulated_interest" string="Acumulado Intereses" />
+                        </list>
+                    </field>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

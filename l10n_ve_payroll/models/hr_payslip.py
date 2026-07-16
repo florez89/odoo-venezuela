@@ -114,10 +114,8 @@ class HrPayslip(models.Model):
     def _get_vacation_days(self):
         self.ensure_one()
         input_line = self.input_line_ids.filtered(lambda l: l.code == 'VAC_DAYS')
-        if not input_line:
-            return 0.0
-
-        if input_line[0].amount == 0.0:
+        amount = input_line[0].amount if input_line else 0.0
+        if amount == 0.0:
             param = self._get_active_ve_parameter()
             if not param:
                 return 0.0
@@ -126,16 +124,13 @@ class HrPayslip(models.Model):
                 return 0.0
             calculated_days = param.vacation_days_base + (seniority - 1)
             return min(calculated_days, param.vacation_days_max)
-
-        return input_line[0].amount
+        return amount
 
     def _get_vacation_bonus_days(self):
         self.ensure_one()
         input_line = self.input_line_ids.filtered(lambda l: l.code == 'BON_VAC_DAYS')
-        if not input_line:
-            return 0.0
-
-        if input_line[0].amount == 0.0:
+        amount = input_line[0].amount if input_line else 0.0
+        if amount == 0.0:
             param = self._get_active_ve_parameter()
             if not param:
                 return 0.0
@@ -144,19 +139,145 @@ class HrPayslip(models.Model):
                 return 0.0
             calculated_days = param.vacation_bonus_days_base + (seniority - 1)
             return min(calculated_days, param.vacation_bonus_days_max)
-
-        return input_line[0].amount
+        return amount
 
     def _get_utilidades_days(self):
         self.ensure_one()
         input_line = self.input_line_ids.filtered(lambda l: l.code == 'UTIL_DAYS')
-        if not input_line:
-            return 0.0
-
-        if input_line[0].amount == 0.0:
+        amount = input_line[0].amount if input_line else 0.0
+        if amount == 0.0:
             param = self._get_active_ve_parameter()
             if not param:
                 return 0.0
             return float(param.utilidades_days_min)
+        return amount
 
-        return input_line[0].amount
+    def _get_ve_salary_integral_daily(self):
+        self.ensure_one()
+        daily_wage = self.wage_in_ves / 30.0
+        param = self._get_active_ve_parameter()
+        if not param:
+            return daily_wage
+        seniority = self._get_lottt_seniority_years()
+        if seniority >= 1:
+            vac_days = param.vacation_bonus_days_base + (seniority - 1)
+            vac_days = min(vac_days, param.vacation_bonus_days_max)
+        else:
+            vac_days = param.vacation_bonus_days_base
+        
+        util_days = param.utilidades_days_min
+        
+        aliquot_vac = (daily_wage * vac_days) / 360.0
+        aliquot_util = (daily_wage * util_days) / 360.0
+        return daily_wage + aliquot_vac + aliquot_util
+
+    def _is_quarterly_anniversary(self):
+        self.ensure_one()
+        start_date = self.employee_id.contract_date_start
+        if not start_date or not self.date_to:
+            return False
+        months_tenure = (self.date_to.year - start_date.year) * 12 + (self.date_to.month - start_date.month) + 1
+        return months_tenure > 0 and months_tenure % 3 == 0
+
+    def _get_ve_prestaciones_adicionales_days(self):
+        self.ensure_one()
+        start_date = self.employee_id.contract_date_start
+        if not start_date or not self.date_to:
+            return 0.0
+        if self.date_to.month != start_date.month:
+            return 0.0
+        seniority = self._get_lottt_seniority_years()
+        if seniority < 2:
+            return 0.0
+        return min(2 * (seniority - 1), 30.0)
+
+    def _update_ve_prestaciones_ledger(self, state='draft'):
+        for slip in self:
+            if not slip.employee_id or not slip.date_to:
+                continue
+            
+            month_start = slip.date_to.replace(day=1)
+            param = slip._get_active_ve_parameter()
+            if not param:
+                continue
+                
+            if param.prestaciones_method == 'monthly':
+                days_gar = 5.0
+            else:
+                days_gar = 15.0 if slip._is_quarterly_anniversary() else 0.0
+                
+            days_adic = slip._get_ve_prestaciones_adicionales_days()
+            
+            daily_integral = slip._get_ve_salary_integral_daily()
+            amount_gar = days_gar * daily_integral
+            amount_adic = days_adic * (slip.wage_in_ves / 30.0)
+            
+            prev_ledger = self.env['l10n_ve.prestaciones.ledger'].search([
+                ('employee_id', '=', slip.employee_id.id),
+                ('date', '<', month_start),
+                ('state', '=', 'posted')
+            ], order='date desc', limit=1)
+            
+            prev_balance = prev_ledger.accumulated_balance if prev_ledger else 0.0
+            prev_accum_interest = prev_ledger.accumulated_interest if prev_ledger else 0.0
+            
+            rate_rec = self.env['l10n_ve.prestaciones.rate'].search([
+                ('date', '<=', month_start)
+            ], order='date desc', limit=1)
+            interest_rate = rate_rec.rate if rate_rec else 0.0
+            
+            accumulated_balance = prev_balance + amount_gar + amount_adic
+            amount_interest = accumulated_balance * (interest_rate / 100.0) / 12.0
+            accumulated_interest = prev_accum_interest + amount_interest
+            
+            ledger = self.env['l10n_ve.prestaciones.ledger'].search([
+                ('employee_id', '=', slip.employee_id.id),
+                ('date', '=', month_start)
+            ], limit=1)
+            
+            vals = {
+                'employee_id': slip.employee_id.id,
+                'payslip_id': slip.id,
+                'date': month_start,
+                'salary_integral_daily': daily_integral,
+                'days_garantia': days_gar,
+                'amount_garantia': amount_gar,
+                'days_adicionales': days_adic,
+                'amount_adicionales': amount_adic,
+                'previous_balance': prev_balance,
+                'accumulated_balance': accumulated_balance,
+                'bcv_rate_id': rate_rec.id if rate_rec else False,
+                'bcv_interest_rate': interest_rate,
+                'amount_interest': amount_interest,
+                'previous_accumulated_interest': prev_accum_interest,
+                'accumulated_interest': accumulated_interest,
+                'state': state
+            }
+            
+            if ledger:
+                if ledger.state == 'draft' or state == 'posted':
+                    ledger.write(vals)
+            else:
+                self.env['l10n_ve.prestaciones.ledger'].create(vals)
+
+    def action_payslip_done(self):
+        res = super(HrPayslip, self).action_payslip_done()
+        self._update_ve_prestaciones_ledger(state='posted')
+        return res
+
+    def action_payslip_cancel(self):
+        res = super(HrPayslip, self).action_payslip_cancel()
+        for slip in self:
+            ledger = self.env['l10n_ve.prestaciones.ledger'].search([
+                ('employee_id', '=', slip.employee_id.id),
+                ('date', '=', slip.date_to.replace(day=1))
+            ])
+            if ledger:
+                ledger.write({'state': 'draft'})
+        return res
+
+    def compute_sheet(self):
+        res = super(HrPayslip, self).compute_sheet()
+        self._update_ve_prestaciones_ledger(state='draft')
+        return res
+

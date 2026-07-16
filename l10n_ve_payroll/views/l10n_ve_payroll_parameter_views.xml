@@ -94,6 +94,9 @@
                                     <field name="utilidades_days_min" string="Días Mínimos" />
                                     <field name="utilidades_days_max" string="Días Máximos" />
                                 </group>
+                                <group string="Garantía de Prestaciones (LOTTT Art. 142)">
+                                    <field name="prestaciones_method" string="Esquema de Abono" />
+                                </group>
                             </group>
                         </page>
                     </notebook>
