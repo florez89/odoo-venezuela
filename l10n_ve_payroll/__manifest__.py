@@ -22,6 +22,8 @@
         'views/hr_payslip_views.xml',
         'views/l10n_ve_prestaciones_rate_views.xml',
         'views/l10n_ve_prestaciones_ledger_views.xml',
+        'views/l10n_ve_ari_views.xml',
+        'views/l10n_ve_employee_liquidation_wizard_views.xml',
         'data/hr_salary_rule_data.xml',
     ],
     'installable': True,

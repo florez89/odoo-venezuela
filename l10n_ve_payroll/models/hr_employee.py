@@ -76,6 +76,26 @@ class HrEmployee(models.Model):
         string='Registros de Prestaciones'
     )
 
+    l10n_ve_ari_rate = fields.Float(
+        string='Porcentaje AR-I',
+        compute='_compute_l10n_ve_ari_rate',
+        help="Porcentaje de retención AR-I vigente."
+    )
+    l10n_ve_liquidation_state = fields.Selection([
+        ('normal', 'Activo'),
+        ('to_liquidate', 'Por Liquidar'),
+        ('liquidated', 'Liquidado')
+    ], string='Estado de Liquidación', default='normal', required=True, copy=False)
+    l10n_ve_exit_date = fields.Date(string='Fecha de Egreso', copy=False)
+    l10n_ve_exit_reason = fields.Selection([
+        ('justified_dismissal', 'Despido Justificado'),
+        ('unjustified_dismissal', 'Despido Injustificado / Retiro Justificado'),
+        ('resignation', 'Renuncia'),
+        ('common_agreement', 'Mutuo Acuerdo'),
+        ('retirement', 'Jubilación'),
+        ('death', 'Fallecimiento')
+    ], string='Motivo de Egreso', copy=False)
+
     def _compute_l10n_ve_prestaciones_totals(self):
         for employee in self:
             latest_ledger = self.env['l10n_ve.prestaciones.ledger'].search([
@@ -88,3 +108,38 @@ class HrEmployee(models.Model):
             else:
                 employee.l10n_ve_prestaciones_balance = 0.0
                 employee.l10n_ve_prestaciones_interest = 0.0
+
+    def _compute_l10n_ve_ari_rate(self):
+        context_year = self.env.context.get('l10n_ve_payslip_year')
+        for employee in self:
+            year = context_year or fields.Date.context_today(self).year
+            ari = self.env['l10n_ve.ari'].search([
+                ('employee_id', '=', employee.id),
+                ('fiscal_year', '=', year),
+                ('state', '=', 'posted')
+            ], order='date desc', limit=1)
+            employee.l10n_ve_ari_rate = ari.retencion_rate if ari else 0.0
+
+    def action_prepare_liquidation(self):
+        self.ensure_one()
+        return {
+            'name': 'Preparar Liquidación',
+            'type': 'ir.actions.act_window',
+            'res_model': 'l10n_ve.employee.liquidation.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_employee_id': self.id,
+                'default_exit_date': fields.Date.context_today(self),
+            }
+        }
+
+    def action_cancel_liquidation(self):
+        for rec in self:
+            rec.write({
+                'l10n_ve_liquidation_state': 'normal',
+                'l10n_ve_exit_date': False,
+                'l10n_ve_exit_reason': False,
+                'active': True
+            })
+

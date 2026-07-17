@@ -307,5 +307,178 @@ ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
 result = ledger.amount_interest if ledger else 0.0
             </field>
         </record>
+
+        <!-- Retención de Impuesto Sobre la Renta (ISLR) -->
+        <record id="hr_salary_rule_ve_islr" model="hr.salary.rule">
+            <field name="name">Retención de I.S.L.R.</field>
+            <field name="code">DED_ISLR</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">110</field>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+rate = employee.l10n_ve_ari_rate
+base_amount = categories.get('GROSS', 0.0) or payslip.wage_in_ves
+result = - (base_amount * (rate / 100.0))
+            </field>
+        </record>
+
+        <!-- Liquidación Garantía de Prestaciones (LIQ_GAR) -->
+        <record id="hr_salary_rule_ve_liq_gar" model="hr.salary.rule">
+            <field name="name">Liquidación Garantía de Prestaciones</field>
+            <field name="code">LIQ_GAR</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">310</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
+    ('employee_id', '=', employee.id),
+    ('payslip_id', '=', payslip.id)
+], limit=1)
+result = (ledger.accumulated_balance + ledger.accumulated_interest) if ledger else (employee.l10n_ve_prestaciones_balance + employee.l10n_ve_prestaciones_interest)
+            </field>
+        </record>
+
+        <!-- Cálculo Retroactivo de Prestaciones Art. 142 c (LIQ_RET) -->
+        <record id="hr_salary_rule_ve_liq_ret" model="hr.salary.rule">
+            <field name="name">Cálculo Retroactivo de Prestaciones</field>
+            <field name="code">LIQ_RET</field>
+            <field name="category_id" ref="hr_salary_rule_category_info"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">311</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+anos = payslip._get_years_of_service_fraction()
+sal_integral = payslip._get_ve_salary_integral_daily()
+result = 30.0 * sal_integral * anos
+            </field>
+        </record>
+
+        <!-- Diferencia de Prestaciones Sociales (LIQ_DIF) -->
+        <record id="hr_salary_rule_ve_liq_dif" model="hr.salary.rule">
+            <field name="name">Diferencia de Prestaciones Sociales</field>
+            <field name="code">LIQ_DIF</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">312</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
+    ('employee_id', '=', employee.id),
+    ('payslip_id', '=', payslip.id)
+], limit=1)
+liq_gar = (ledger.accumulated_balance + ledger.accumulated_interest) if ledger else (employee.l10n_ve_prestaciones_balance + employee.l10n_ve_prestaciones_interest)
+
+anos = payslip._get_years_of_service_fraction()
+sal_integral = payslip._get_ve_salary_integral_daily()
+liq_ret = 30.0 * sal_integral * anos
+
+result = max(0.0, liq_ret - liq_gar)
+            </field>
+        </record>
+
+        <!-- Vacaciones Fraccionadas (LIQ_VAC_FRAC) -->
+        <record id="hr_salary_rule_ve_liq_vac_frac" model="hr.salary.rule">
+            <field name="name">Vacaciones Fraccionadas</field>
+            <field name="code">LIQ_VAC_FRAC</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">313</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    completed_years, fractional_months = payslip._get_liquidation_months_and_years()
+    seniority_year = completed_years + 1
+    vac_days = param.vacation_days_base + (seniority_year - 1)
+    vac_days = min(vac_days, param.vacation_days_max)
+    daily_wage = payslip.wage_in_ves / 30.0
+    result = ((fractional_months / 12.0) * vac_days) * daily_wage
+            </field>
+        </record>
+
+        <!-- Bono Vacacional Fraccionado (LIQ_BON_VAC_FRAC) -->
+        <record id="hr_salary_rule_ve_liq_bon_vac_frac" model="hr.salary.rule">
+            <field name="name">Bono Vacacional Fraccionado</field>
+            <field name="code">LIQ_BON_VAC_FRAC</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">314</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    completed_years, fractional_months = payslip._get_liquidation_months_and_years()
+    seniority_year = completed_years + 1
+    vac_bonus_days = param.vacation_bonus_days_base + (seniority_year - 1)
+    vac_bonus_days = min(vac_bonus_days, param.vacation_bonus_days_max)
+    daily_wage = payslip.wage_in_ves / 30.0
+    result = ((fractional_months / 12.0) * vac_bonus_days) * daily_wage
+            </field>
+        </record>
+
+        <!-- Utilidades Fraccionadas (LIQ_UTIL_FRAC) -->
+        <record id="hr_salary_rule_ve_liq_util_frac" model="hr.salary.rule">
+            <field name="name">Utilidades Fraccionadas</field>
+            <field name="code">LIQ_UTIL_FRAC</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">315</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+param = payslip._get_active_ve_parameter()
+if not param:
+    result = 0.0
+else:
+    completed_years, fractional_months = payslip._get_liquidation_months_and_years()
+    util_days = param.utilidades_days_min
+    daily_wage = payslip.wage_in_ves / 30.0
+    result = ((fractional_months / 12.0) * util_days) * daily_wage
+            </field>
+        </record>
+
+        <!-- Indemnización de Despido Injustificado (LIQ_IND_DESP) -->
+        <record id="hr_salary_rule_ve_liq_ind_desp" model="hr.salary.rule">
+            <field name="name">Indemnización por Despido Injustificado</field>
+            <field name="code">LIQ_IND_DESP</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">316</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = employee.l10n_ve_liquidation_state == 'to_liquidate' and employee.l10n_ve_exit_reason == 'unjustified_dismissal'</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+ledger = payslip.env['l10n_ve.prestaciones.ledger'].search([
+    ('employee_id', '=', employee.id),
+    ('payslip_id', '=', payslip.id)
+], limit=1)
+liq_gar = (ledger.accumulated_balance + ledger.accumulated_interest) if ledger else (employee.l10n_ve_prestaciones_balance + employee.l10n_ve_prestaciones_interest)
+
+anos = payslip._get_years_of_service_fraction()
+sal_integral = payslip._get_ve_salary_integral_daily()
+liq_ret = 30.0 * sal_integral * anos
+liq_dif = max(0.0, liq_ret - liq_gar)
+
+result = liq_gar + liq_dif
+            </field>
+        </record>
     </data>
 </odoo>

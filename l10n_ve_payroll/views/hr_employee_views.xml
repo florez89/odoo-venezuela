@@ -5,6 +5,14 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
+            <!-- Insert header for liquidation controls before sheet -->
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_prepare_liquidation" string="Preparar Liquidación" type="object" class="btn-primary" invisible="l10n_ve_liquidation_state != 'normal'"/>
+                    <button name="action_cancel_liquidation" string="Cancelar Liquidación" type="object" invisible="l10n_ve_liquidation_state != 'to_liquidate'"/>
+                    <field name="l10n_ve_liquidation_state" widget="statusbar" statusbar_visible="normal,to_liquidate,liquidated"/>
+                </header>
+            </xpath>
             <!-- Insert currency fields before the wage label to have proper separate rows -->
             <xpath expr="//label[@for='wage']" position="before">
                 <field name="wage_currency_id" string="Moneda Pactada" />
@@ -21,6 +29,11 @@
                         <group string="Resumen de Saldos (VES)">
                             <field name="l10n_ve_prestaciones_balance" string="Acumulado Prestaciones" readonly="1" decoration-bf="1" />
                             <field name="l10n_ve_prestaciones_interest" string="Intereses Acumulados" readonly="1" decoration-bf="1" />
+                            <field name="l10n_ve_ari_rate" string="Porcentaje AR-I (%)" readonly="1" />
+                        </group>
+                        <group string="Egreso / Liquidación" invisible="l10n_ve_liquidation_state == 'normal'">
+                            <field name="l10n_ve_exit_date" readonly="1" />
+                            <field name="l10n_ve_exit_reason" readonly="1" />
                         </group>
                     </group>
                     <field name="l10n_ve_prestaciones_ledger_ids" readonly="1" nolabel="1">

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista (Tree/List View) -->
+    <record id="view_l10n_ve_ari_tree" model="ir.ui.view">
+        <field name="name">l10n_ve.ari.tree</field>
+        <field name="model">l10n_ve.ari</field>
+        <field name="arch" type="xml">
+            <list string="Planillas AR-I">
+                <field name="name" />
+                <field name="employee_id" />
+                <field name="fiscal_year" />
+                <field name="is_variation" />
+                <field name="estimated_income" string="Ingreso Est. (VES)" />
+                <field name="retencion_rate" string="Retención (%)" decoration-bf="1" />
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'posted'" />
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form View) -->
+    <record id="view_l10n_ve_ari_form" model="ir.ui.view">
+        <field name="name">l10n_ve.ari.form</field>
+        <field name="model">l10n_ve.ari</field>
+        <field name="arch" type="xml">
+            <form string="Planilla AR-I">
+                <header>
+                    <button name="action_post" string="Validar" type="object" class="btn-primary" invisible="state != 'draft'" />
+                    <button name="action_draft" string="Volver a Borrador" type="object" invisible="state != 'posted'" />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Datos Generales">
+                            <field name="employee_id" readonly="state == 'posted'" />
+                            <field name="date" readonly="state == 'posted'" />
+                            <field name="fiscal_year" readonly="state == 'posted'" />
+                            <field name="is_variation" readonly="state == 'posted'" />
+                        </group>
+                        <group string="Cálculos de Unidades Tributarias (U.T.)">
+                            <field name="estimated_income" readonly="state == 'posted'" />
+                            <field name="estimated_income_ut" readonly="1" />
+                            <field name="desgravamen_type" widget="radio" readonly="state == 'posted'" />
+                            <field name="desgravamen_detailed" invisible="desgravamen_type != 'detailed'" readonly="state == 'posted'" />
+                            <field name="desgravamen_ut" readonly="1" />
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Rebajas e Impuestos">
+                            <field name="carga_familiar_count" readonly="state == 'posted'" />
+                            <field name="carga_familiar_ut" readonly="1" />
+                            <field name="rebaja_personal_ut" readonly="1" />
+                            <field name="taxes_retained_excess_ut" readonly="state == 'posted'" />
+                            <field name="total_rebajas_ut" readonly="1" />
+                        </group>
+                        <group string="Cálculo del Porcentaje">
+                            <field name="estimated_tax_ut" readonly="1" />
+                            <field name="estimated_tax_to_retain_ut" readonly="1" />
+                            <field name="retencion_rate" readonly="1" class="oe_subtotal_footer_separator" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda (Search View) -->
+    <record id="view_l10n_ve_ari_search" model="ir.ui.view">
+        <field name="name">l10n_ve.ari.search</field>
+        <field name="model">l10n_ve.ari</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Planilla AR-I">
+                <field name="employee_id" />
+                <field name="fiscal_year" />
+                <filter string="Borrador" name="draft" domain="[('state', '=', 'draft')]" />
+                <filter string="Validado" name="posted" domain="[('state', '=', 'posted')]" />
+                <separator />
+                <filter string="Empleado" name="group_employee" context="{'group_by': 'employee_id'}" />
+                <filter string="Año Fiscal" name="group_fiscal_year" context="{'group_by': 'fiscal_year'}" />
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción de Ventana (Window Action) -->
+    <record id="action_l10n_ve_ari" model="ir.actions.act_window">
+        <field name="name">Planilla AR-I</field>
+        <field name="res_model">l10n_ve.ari</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_l10n_ve_ari_search" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra la planilla AR-I de retención de ISLR
+            </p>
+            <p>
+                Calcula el porcentaje de retención estimado para los empleados de acuerdo a la Tarifa 1 de la Ley de Impuesto Sobre la Renta (LISLR).
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem
+        id="menu_l10n_ve_ari"
+        name="Planilla AR-I"
+        parent="menu_l10n_ve_payroll_configuration"
+        action="action_l10n_ve_ari"
+        sequence="20"
+    />
+</odoo>

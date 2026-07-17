@@ -260,9 +260,67 @@ class HrPayslip(models.Model):
             else:
                 self.env['l10n_ve.prestaciones.ledger'].create(vals)
 
+    def _get_liquidation_months_and_years(self):
+        self.ensure_one()
+        start_date = self.employee_id.contract_date_start
+        if not start_date:
+            return 0, 0
+        end_date = self.employee_id.l10n_ve_exit_date or self.date_to or fields.Date.context_today(self)
+        if start_date > end_date:
+            return 0, 0
+        
+        years = end_date.year - start_date.year
+        months = end_date.month - start_date.month
+        days = end_date.day - start_date.day
+        
+        if days < 0:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+            
+        total_months = years * 12 + months
+        completed_years = total_months // 12
+        fractional_months = total_months % 12
+        return completed_years, fractional_months
+
+    def _get_years_of_service_fraction(self):
+        completed_years, fractional_months = self._get_liquidation_months_and_years()
+        if fractional_months > 6:
+            return completed_years + 1
+        return completed_years
+
+    def _get_fractional_months(self):
+        completed_years, fractional_months = self._get_liquidation_months_and_years()
+        return fractional_months
+
     def action_payslip_done(self):
+        year = self[0].date_to.year if self and self[0].date_to else fields.Date.context_today(self).year
+        self = self.with_context(l10n_ve_payslip_year=year)
         res = super(HrPayslip, self).action_payslip_done()
         self._update_ve_prestaciones_ledger(state='posted')
+        
+        for slip in self:
+            if slip.employee_id.l10n_ve_liquidation_state == 'to_liquidate':
+                # Update the ledger record for this month to reflect liquidation (balance and interest to 0)
+                month_start = slip.date_to.replace(day=1)
+                ledger = self.env['l10n_ve.prestaciones.ledger'].search([
+                    ('employee_id', '=', slip.employee_id.id),
+                    ('date', '=', month_start),
+                    ('state', '=', 'posted')
+                ], limit=1)
+                if ledger:
+                    ledger.write({
+                        'accumulated_balance': 0.0,
+                        'accumulated_interest': 0.0,
+                    })
+                
+                # Update employee state to liquidated, active=False and set exit date if not set
+                slip.employee_id.write({
+                    'l10n_ve_liquidation_state': 'liquidated',
+                    'l10n_ve_exit_date': slip.employee_id.l10n_ve_exit_date or slip.date_to,
+                    'active': False,
+                })
         return res
 
     def action_payslip_cancel(self):
@@ -277,7 +335,10 @@ class HrPayslip(models.Model):
         return res
 
     def compute_sheet(self):
+        year = self[0].date_to.year if self and self[0].date_to else fields.Date.context_today(self).year
+        self = self.with_context(l10n_ve_payslip_year=year)
         res = super(HrPayslip, self).compute_sheet()
         self._update_ve_prestaciones_ledger(state='draft')
         return res
+
 
