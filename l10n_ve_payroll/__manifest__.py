@@ -24,6 +24,8 @@
         'views/l10n_ve_prestaciones_ledger_views.xml',
         'views/l10n_ve_ari_views.xml',
         'views/l10n_ve_employee_liquidation_wizard_views.xml',
+        'views/l10n_ve_loan_views.xml',
+        'views/l10n_ve_bank_export_views.xml',
         'data/hr_salary_rule_data.xml',
     ],
     'installable': True,

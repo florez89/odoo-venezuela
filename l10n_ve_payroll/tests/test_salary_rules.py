@@ -380,3 +380,94 @@ class TestVeSalaryRules(TransactionCase):
         self.assertTrue(liq_ind_desp_line)
         expected_ind = (liq_gar_line.total if liq_gar_line else 0.0) + (liq_dif_line.total if liq_dif_line else 0.0)
         self.assertAlmostEqual(liq_ind_desp_line.total, expected_ind, places=2)
+
+    def test_case_j_overtime_and_holidays(self):
+        """Caso J: Probar asignaciones por Horas Extras Diurnas, Nocturnas y Feriados Trabajados (LOTTT)"""
+        # Sueldo en VES = 18,000.00 VES -> Salario diario = 600.00 VES
+        # Salario hora diurna (8h) = 75.00 VES -> H.E. Diurna (+50%) = 112.50 VES/hora
+        # Salario hora nocturna (7h) = 85.71 VES -> H.E. Nocturna (+50%) = 128.57 VES/hora
+        # Feriado trabajado (+150%) = 900.00 VES/día
+        hed_type = self.env['hr.payslip.input.type'].create({'name': 'HED', 'code': 'HED_HOURS'})
+        hen_type = self.env['hr.payslip.input.type'].create({'name': 'HEN', 'code': 'HEN_HOURS'})
+        fer_type = self.env['hr.payslip.input.type'].create({'name': 'FER', 'code': 'FER_DAYS'})
+
+        payslip = self.env['hr.payslip'].create({
+            'name': 'Recibo Horas Extras Test',
+            'employee_id': self.employee.id,
+            'contract_id': self.contract.id,
+            'struct_id': self.salary_structure.id,
+            'date_from': '2026-07-01',
+            'date_to': '2026-07-31',
+            'l10n_ve_bcv_rate': 36.50,
+            'input_line_ids': [
+                (0, 0, {'input_type_id': hed_type.id, 'amount': 10.0}), # 10 horas extra diurnas
+                (0, 0, {'input_type_id': hen_type.id, 'amount': 5.0}),  # 5 horas extra nocturnas
+                (0, 0, {'input_type_id': fer_type.id, 'amount': 2.0}),  # 2 días feriados trabajados
+            ]
+        })
+        payslip.compute_sheet()
+
+        lines = {l.code: l.total for l in payslip.line_ids}
+        self.assertIn('ASIG_HED', lines)
+        self.assertAlmostEqual(lines['ASIG_HED'], 10.0 * 75.0 * 1.5, places=2)
+
+        self.assertIn('ASIG_HEN', lines)
+        self.assertAlmostEqual(lines['ASIG_HEN'], 5.0 * (600.00 / 7.0) * 1.5, places=2)
+
+        self.assertIn('ASIG_FER', lines)
+        self.assertAlmostEqual(lines['ASIG_FER'], 2.0 * 600.00 * 1.5, places=2)
+
+    def test_case_k_employee_loan(self):
+        """Caso K: Probar la creación de Préstamos y deducción automática por cuota (DED_PRESTAMO)"""
+        loan = self.env['l10n_ve.loan'].create({
+            'employee_id': self.employee.id,
+            'amount': 3000.00,
+            'installments': 3,
+        })
+        loan.action_approve()
+        self.assertEqual(loan.state, 'approved')
+        self.assertEqual(len(loan.line_ids), 3)
+        self.assertEqual(loan.installment_amount, 1000.00)
+
+        payslip = self.env['hr.payslip'].create({
+            'name': 'Recibo Préstamo Test',
+            'employee_id': self.employee.id,
+            'contract_id': self.contract.id,
+            'struct_id': self.salary_structure.id,
+            'date_from': '2026-07-01',
+            'date_to': '2026-07-31',
+            'l10n_ve_bcv_rate': 36.50,
+        })
+        payslip.compute_sheet()
+
+        lines = {l.code: l.total for l in payslip.line_ids}
+        self.assertIn('DED_PRESTAMO', lines)
+        self.assertAlmostEqual(lines['DED_PRESTAMO'], -1000.00, places=2)
+
+        payslip.action_payslip_done()
+        self.assertEqual(loan.paid_amount, 1000.00)
+        self.assertEqual(loan.balance_amount, 2000.00)
+
+    def test_case_l_bank_export_txt(self):
+        """Caso L: Probar el asistente de exportación de archivos TXT bancarios (BDV y Banesco)"""
+        payslip = self.env['hr.payslip'].create({
+            'name': 'Recibo TXT Test',
+            'employee_id': self.employee.id,
+            'contract_id': self.contract.id,
+            'struct_id': self.salary_structure.id,
+            'date_from': '2026-07-01',
+            'date_to': '2026-07-31',
+            'l10n_ve_bcv_rate': 36.50,
+        })
+        payslip.compute_sheet()
+
+        wizard = self.env['l10n_ve.payroll.bank.export.wizard'].create({
+            'bank_id': 'bdv',
+            'company_bank_account': '01020123451234567890',
+            'date_from': '2026-07-01',
+            'date_to': '2026-07-31',
+            'payslip_ids': [(6, 0, [payslip.id])]
+        })
+        res = wizard.action_generate_txt()
+        self.assertTrue(wizard.file_data)
+        self.assertTrue(wizard.file_name.startswith('nomina_bdv_'))

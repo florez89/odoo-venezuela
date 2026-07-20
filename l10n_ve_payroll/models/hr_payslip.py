@@ -294,6 +294,18 @@ class HrPayslip(models.Model):
         completed_years, fractional_months = self._get_liquidation_months_and_years()
         return fractional_months
 
+    def _get_loan_deduction_amount(self):
+        self.ensure_one()
+        if not self.employee_id:
+            return 0.0
+        # Search for approved loans with unpaid lines for this employee
+        unpaid_line = self.env['l10n_ve.loan.line'].search([
+            ('employee_id', '=', self.employee_id.id),
+            ('paid', '=', False),
+            ('loan_id.state', '=', 'approved'),
+        ], order='sequence, id', limit=1)
+        return unpaid_line.amount if unpaid_line else 0.0
+
     def action_payslip_done(self):
         year = self[0].date_to.year if self and self[0].date_to else fields.Date.context_today(self).year
         self = self.with_context(l10n_ve_payslip_year=year)
@@ -301,6 +313,20 @@ class HrPayslip(models.Model):
         self._update_ve_prestaciones_ledger(state='posted')
         
         for slip in self:
+            # Process loan payment if applicable
+            unpaid_line = self.env['l10n_ve.loan.line'].search([
+                ('employee_id', '=', slip.employee_id.id),
+                ('paid', '=', False),
+                ('loan_id.state', '=', 'approved'),
+            ], order='sequence, id', limit=1)
+            if unpaid_line:
+                unpaid_line.write({
+                    'paid': True,
+                    'payslip_id': slip.id,
+                })
+                # Recompute loan amounts
+                unpaid_line.loan_id._compute_loan_amounts()
+
             if slip.employee_id.l10n_ve_liquidation_state == 'to_liquidate':
                 # Update the ledger record for this month to reflect liquidation (balance and interest to 0)
                 month_start = slip.date_to.replace(day=1)

@@ -477,7 +477,74 @@ sal_integral = payslip._get_ve_salary_integral_daily()
 liq_ret = 30.0 * sal_integral * anos
 liq_dif = max(0.0, liq_ret - liq_gar)
 
-result = liq_gar + liq_dif
+
+        <!-- Horas Extras Diurnas (ASIG_HED - Art. 118 LOTTT +50% recargo) -->
+        <record id="hr_salary_rule_ve_hed" model="hr.salary.rule">
+            <field name="name">Horas Extras Diurnas</field>
+            <field name="code">ASIG_HED</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">15</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = any(l.code == 'HED_HOURS' and l.amount > 0 for l in payslip.input_line_ids)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+input_line = payslip.input_line_ids.filtered(lambda l: l.code == 'HED_HOURS')
+hours = input_line[0].amount if input_line else 0.0
+hourly_wage = (payslip.wage_in_ves / 30.0) / 8.0
+result = hours * hourly_wage * 1.5
+            </field>
+        </record>
+
+        <!-- Horas Extras Nocturnas (ASIG_HEN - Art. 117 y 118 LOTTT +30% nocturno + 50% extra) -->
+        <record id="hr_salary_rule_ve_hen" model="hr.salary.rule">
+            <field name="name">Horas Extras Nocturnas</field>
+            <field name="code">ASIG_HEN</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">16</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = any(l.code == 'HEN_HOURS' and l.amount > 0 for l in payslip.input_line_ids)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+input_line = payslip.input_line_ids.filtered(lambda l: l.code == 'HEN_HOURS')
+hours = input_line[0].amount if input_line else 0.0
+hourly_nocturnal_wage = (payslip.wage_in_ves / 30.0) / 7.0
+result = hours * hourly_nocturnal_wage * 1.5
+            </field>
+        </record>
+
+        <!-- Días Feriados o Descanso Trabajados (ASIG_FER - Art. 120 LOTTT +150% recargo) -->
+        <record id="hr_salary_rule_ve_fer" model="hr.salary.rule">
+            <field name="name">Días Feriados / Descanso Trabajados</field>
+            <field name="code">ASIG_FER</field>
+            <field name="category_id" ref="hr_payroll.ALW"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">17</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = any(l.code == 'FER_DAYS' and l.amount > 0 for l in payslip.input_line_ids)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+input_line = payslip.input_line_ids.filtered(lambda l: l.code == 'FER_DAYS')
+days = input_line[0].amount if input_line else 0.0
+daily_wage = payslip.wage_in_ves / 30.0
+result = days * daily_wage * 1.5
+            </field>
+        </record>
+
+        <!-- Deducción Cuota de Préstamo a Trabajador (DED_PRESTAMO) -->
+        <record id="hr_salary_rule_ve_ded_prestamo" model="hr.salary.rule">
+            <field name="name">Deducción de Cuota de Préstamo</field>
+            <field name="code">DED_PRESTAMO</field>
+            <field name="category_id" ref="hr_payroll.DED"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">105</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = payslip._get_loan_deduction_amount() > 0</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+loan_amount = payslip._get_loan_deduction_amount()
+result = -abs(loan_amount)
             </field>
         </record>
     </data>

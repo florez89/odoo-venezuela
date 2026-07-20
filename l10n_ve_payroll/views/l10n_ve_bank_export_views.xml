@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Form View for TXT Bank Export Wizard -->
+        <record id="view_l10n_ve_bank_export_wizard" model="ir.ui.view">
+            <field name="name">l10n_ve.payroll.bank.export.wizard.form</field>
+            <field name="model">l10n_ve.payroll.bank.export.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Exportar Pago de Nómina (TXT Bancario)">
+                    <sheet>
+                        <group>
+                            <group string="Parámetros de Exportación">
+                                <field name="bank_id"/>
+                                <field name="company_bank_account" placeholder="Ej: 01020123451234567890"/>
+                            </group>
+                            <group string="Rango de Fechas">
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Recibos Seleccionados" name="payslips">
+                                <field name="payslip_ids">
+                                    <list string="Recibos">
+                                        <field name="name"/>
+                                        <field name="employee_id"/>
+                                        <field name="date_from"/>
+                                        <field name="date_to"/>
+                                        <field name="net_wage" sum="Total Pago Net"/>
+                                        <field name="state"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Descarga de Archivo" name="download" invisible="not file_data">
+                                <group>
+                                    <field name="file_name" invisible="1"/>
+                                    <field name="file_data" filename="file_name"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <footer>
+                        <button name="action_generate_txt" string="Generar Archivo TXT" type="object" class="oe_highlight"/>
+                        <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action for TXT Bank Export Wizard -->
+        <record id="action_l10n_ve_bank_export_wizard" model="ir.actions.act_window">
+            <field name="name">Exportar TXT Bancario</field>
+            <field name="res_model">l10n_ve.payroll.bank.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Menu Item for Bank TXT Export under Reportes / Procesos -->
+        <menuitem id="menu_l10n_ve_bank_export"
+                  name="Exportar TXT Bancario"
+                  parent="hr_payroll.menu_hr_payroll_report"
+                  action="action_l10n_ve_bank_export_wizard"
+                  sequence="30"/>
+    </data>
+</odoo>
