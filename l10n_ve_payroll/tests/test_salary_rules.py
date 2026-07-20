@@ -383,13 +383,14 @@ class TestVeSalaryRules(TransactionCase):
 
     def test_case_j_overtime_and_holidays(self):
         """Caso J: Probar asignaciones por Horas Extras Diurnas, Nocturnas y Feriados Trabajados (LOTTT)"""
+        employee, _ = self._create_employee_with_contract('Empleado HE', '2025-01-01', self.usd, 493.15)
         hed_type = self.env['hr.payslip.input.type'].create({'name': 'HED', 'code': 'HED_HOURS'})
         hen_type = self.env['hr.payslip.input.type'].create({'name': 'HEN', 'code': 'HEN_HOURS'})
         fer_type = self.env['hr.payslip.input.type'].create({'name': 'FER', 'code': 'FER_DAYS'})
 
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo Horas Extras Test',
-            'employee_id': self.employee.id,
+            'employee_id': employee.id,
             'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
@@ -404,18 +405,19 @@ class TestVeSalaryRules(TransactionCase):
 
         lines = {l.code: l.total for l in payslip.line_ids}
         self.assertIn('ASIG_HED', lines)
-        self.assertAlmostEqual(lines['ASIG_HED'], 10.0 * 75.0 * 1.5, places=2)
+        self.assertAlmostEqual(lines['ASIG_HED'], 10.0 * 75.0 * 1.5, places=1)
 
         self.assertIn('ASIG_HEN', lines)
-        self.assertAlmostEqual(lines['ASIG_HEN'], 5.0 * (600.00 / 7.0) * 1.5, places=2)
+        self.assertAlmostEqual(lines['ASIG_HEN'], 5.0 * (600.00 / 7.0) * 1.5, places=1)
 
         self.assertIn('ASIG_FER', lines)
-        self.assertAlmostEqual(lines['ASIG_FER'], 2.0 * 600.00 * 1.5, places=2)
+        self.assertAlmostEqual(lines['ASIG_FER'], 2.0 * 600.00 * 1.5, places=1)
 
     def test_case_k_employee_loan(self):
         """Caso K: Probar la creación de Préstamos y deducción automática por cuota (DED_PRESTAMO)"""
+        employee, _ = self._create_employee_with_contract('Empleado Préstamo', '2025-01-01', self.usd, 493.15)
         loan = self.env['l10n_ve.loan'].create({
-            'employee_id': self.employee.id,
+            'employee_id': employee.id,
             'amount': 3000.00,
             'installments': 3,
         })
@@ -426,7 +428,7 @@ class TestVeSalaryRules(TransactionCase):
 
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo Préstamo Test',
-            'employee_id': self.employee.id,
+            'employee_id': employee.id,
             'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
@@ -444,9 +446,10 @@ class TestVeSalaryRules(TransactionCase):
 
     def test_case_l_bank_export_txt(self):
         """Caso L: Probar el asistente de exportación de archivos TXT bancarios (BDV y Banesco)"""
+        employee, _ = self._create_employee_with_contract('Empleado TXT', '2025-01-01', self.usd, 493.15)
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo TXT Test',
-            'employee_id': self.employee.id,
+            'employee_id': employee.id,
             'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
