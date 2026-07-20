@@ -475,10 +475,9 @@ liq_gar = (ledger.accumulated_balance + ledger.accumulated_interest) if ledger e
 anos = payslip._get_years_of_service_fraction()
 sal_integral = payslip._get_ve_salary_integral_daily()
 liq_ret = 30.0 * sal_integral * anos
-liq_dif = max(0.0, liq_ret - liq_gar)
-
-
-        <!-- Horas Extras Diurnas (ASIG_HED - Art. 118 LOTTT +50% recargo) -->
+result = liq_gar + liq_dif
+            </field>
+        </record>
         <record id="hr_salary_rule_ve_hed" model="hr.salary.rule">
             <field name="name">Horas Extras Diurnas</field>
             <field name="code">ASIG_HED</field>
