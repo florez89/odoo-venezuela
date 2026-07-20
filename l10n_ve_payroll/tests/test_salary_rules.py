@@ -383,10 +383,6 @@ class TestVeSalaryRules(TransactionCase):
 
     def test_case_j_overtime_and_holidays(self):
         """Caso J: Probar asignaciones por Horas Extras Diurnas, Nocturnas y Feriados Trabajados (LOTTT)"""
-        # Sueldo en VES = 18,000.00 VES -> Salario diario = 600.00 VES
-        # Salario hora diurna (8h) = 75.00 VES -> H.E. Diurna (+50%) = 112.50 VES/hora
-        # Salario hora nocturna (7h) = 85.71 VES -> H.E. Nocturna (+50%) = 128.57 VES/hora
-        # Feriado trabajado (+150%) = 900.00 VES/día
         hed_type = self.env['hr.payslip.input.type'].create({'name': 'HED', 'code': 'HED_HOURS'})
         hen_type = self.env['hr.payslip.input.type'].create({'name': 'HEN', 'code': 'HEN_HOURS'})
         fer_type = self.env['hr.payslip.input.type'].create({'name': 'FER', 'code': 'FER_DAYS'})
@@ -394,8 +390,7 @@ class TestVeSalaryRules(TransactionCase):
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo Horas Extras Test',
             'employee_id': self.employee.id,
-            'contract_id': self.contract.id,
-            'struct_id': self.salary_structure.id,
+            'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
             'l10n_ve_bcv_rate': 36.50,
@@ -432,8 +427,7 @@ class TestVeSalaryRules(TransactionCase):
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo Préstamo Test',
             'employee_id': self.employee.id,
-            'contract_id': self.contract.id,
-            'struct_id': self.salary_structure.id,
+            'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
             'l10n_ve_bcv_rate': 36.50,
@@ -453,8 +447,7 @@ class TestVeSalaryRules(TransactionCase):
         payslip = self.env['hr.payslip'].create({
             'name': 'Recibo TXT Test',
             'employee_id': self.employee.id,
-            'contract_id': self.contract.id,
-            'struct_id': self.salary_structure.id,
+            'struct_id': self.structure.id,
             'date_from': '2026-07-01',
             'date_to': '2026-07-31',
             'l10n_ve_bcv_rate': 36.50,
