@@ -92,7 +92,7 @@
         <!-- Menu Item for Préstamos -->
         <menuitem id="menu_l10n_ve_loan"
                   name="Préstamos a Trabajadores"
-                  parent="hr_payroll.menu_hr_payroll_employees_root"
+                  parent="hr_payroll.menu_hr_payroll_employees"
                   action="action_l10n_ve_loan"
                   sequence="25"/>
     </data>
