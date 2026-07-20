@@ -70,13 +70,19 @@ class L10nVePayrollBankExportWizard(models.TransientModel):
         }
 
     def _get_clean_identification(self, employee):
-        val = employee.identification_id or employee.ssnid or '0'
+        val = getattr(employee, 'identification_id', False) or getattr(employee, 'ssnid', False) or '0'
         clean_id = ''.join(filter(str.isdigit, str(val)))
         return clean_id if clean_id else '0'
 
     def _get_clean_account(self, employee):
-        acc = employee.bank_account_id.acc_number if employee.bank_account_id else ''
-        clean_acc = ''.join(filter(str.isdigit, str(acc)))
+        acc = ''
+        if getattr(employee, 'bank_account_id', False):
+            acc = employee.bank_account_id.acc_number
+        elif getattr(employee, 'partner_id', False) and getattr(employee.partner_id, 'bank_ids', False):
+            acc = employee.partner_id.bank_ids[0].acc_number
+        elif getattr(employee, 'work_contact_id', False) and getattr(employee.work_contact_id, 'bank_ids', False):
+            acc = employee.work_contact_id.bank_ids[0].acc_number
+        clean_acc = ''.join(filter(str.isdigit, str(acc or '')))
         return clean_acc.zfill(20)
 
     def _generate_bdv_txt(self, company_acc):
