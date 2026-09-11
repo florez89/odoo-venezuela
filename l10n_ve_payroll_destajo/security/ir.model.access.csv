@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_destajo_producto_user,destajo.producto.user,model_destajo_producto,base.group_user,1,1,1,1
+access_destajo_operacion_user,destajo.operacion.user,model_destajo_operacion,base.group_user,1,1,1,1
+access_destajo_lote_user,destajo.lote.user,model_destajo_lote,base.group_user,1,1,1,1
+access_destajo_semanal_user,destajo.semanal.user,model_destajo_semanal,base.group_user,1,1,1,1
+access_destajo_line_user,destajo.line.user,model_destajo_line,base.group_user,1,1,1,1
+access_destajo_resumen_line_user,destajo.resumen.line.user,model_destajo_resumen_line,base.group_user,1,1,1,1

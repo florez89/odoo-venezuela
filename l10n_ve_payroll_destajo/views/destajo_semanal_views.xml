@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Lista Semanal -->
+    <record id="view_destajo_semanal_list" model="ir.ui.view">
+        <field name="name">destajo.semanal.list</field>
+        <field name="model">destajo.semanal</field>
+        <field name="arch" type="xml">
+            <list string="Planillas Semanales de Producción" decoration-info="state == 'computed'" decoration-success="state == 'transferred'">
+                <field name="name" string="Período / Semana"/>
+                <field name="date_from" string="Desde"/>
+                <field name="date_to" string="Hasta"/>
+                <field name="total_piezas" string="Total Piezas" sum="Total Piezas"/>
+                <field name="total_destajo_usd" string="Total Destajo ($ USD)" sum="Total Destajo"/>
+                <field name="bcv_rate" string="Tasa BCV"/>
+                <field name="total_devengado_ves" string="Total a Pagar (VES)" sum="Total VES"/>
+                <field name="state" widget="badge" decoration-info="state == 'computed'" decoration-success="state == 'transferred'" decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Semanal -->
+    <record id="view_destajo_semanal_form" model="ir.ui.view">
+        <field name="name">destajo.semanal.form</field>
+        <field name="model">destajo.semanal</field>
+        <field name="arch" type="xml">
+            <form string="Planilla Semanal de Producción y Liquidación">
+                <header>
+                    <button name="action_calcular_resumen" string="1. Calcular Resumen" type="object" class="btn-secondary" invisible="state == 'transferred'"/>
+                    <button name="action_pasar_a_nomina" string="2. Pasar a Nómina Oficial" type="object" class="btn-primary" invisible="state == 'transferred'"/>
+                    <button name="action_ver_recibos" string="Ver Recibos de Nómina" type="object" class="btn-info" invisible="payslip_count == 0"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,computed,transferred"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Descripción de la Semana"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Semana del 04 al 11 de Septiembre 2026"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_from" string="Fecha Inicio"/>
+                            <field name="date_to" string="Fecha Cierre"/>
+                        </group>
+                        <group>
+                            <field name="bcv_rate" string="Tasa Oficial BCV (VES/$)" decoration-bf="1"/>
+                            <field name="payslip_count" invisible="1"/>
+                        </group>
+                    </group>
+                    <group col="4" class="alert alert-info" role="status">
+                        <field name="total_piezas" readonly="1" string="Piezas Cosidas"/>
+                        <field name="total_destajo_usd" readonly="1" string="Total Destajo ($)"/>
+                        <field name="total_devengado_usd" readonly="1" string="Gran Total Devengado ($)"/>
+                        <field name="total_devengado_ves" readonly="1" string="Total a Pagar (VES)"/>
+                    </group>
+                    <notebook>
+                        <page string="Registro de Piezas del Taller (Carga Rápida)">
+                            <field name="line_ids" readonly="state == 'transferred'">
+                                <list editable="bottom">
+                                    <field name="employee_id" string="Trabajador / Costurera"/>
+                                    <field name="lote_id" string="Corte / Lote"/>
+                                    <field name="producto_id" string="Prenda"/>
+                                    <field name="operacion_id" string="Operación / Tarea"/>
+                                    <field name="qty" string="Cant. Piezas"/>
+                                    <field name="price_usd" string="Tarifa ($ USD)"/>
+                                    <field name="total_usd" string="Subtotal ($ USD)" sum="Total USD"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Resumen y Liquidación por Empleado">
+                            <field name="resumen_ids" readonly="1">
+                                <list>
+                                    <field name="employee_id" string="Trabajador"/>
+                                    <field name="job_title" string="Cargo"/>
+                                    <field name="wage_fixed_usd" string="Sueldo Fijo ($ USD)" sum="Total Fijo"/>
+                                    <field name="destajo_usd" string="Destajo Ganado ($ USD)" sum="Total Destajo"/>
+                                    <field name="total_usd" string="Total ($ USD)" sum="Gran Total USD" decoration-bf="1"/>
+                                    <field name="bcv_rate" string="Tasa BCV"/>
+                                    <field name="total_ves" string="Total a Pagar (VES)" sum="Total VES" decoration-bf="1"/>
+                                    <field name="payslip_id" string="Recibo de Nómina" widget="many2one"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción Semanal -->
+    <record id="action_destajo_semanal" model="ir.actions.act_window">
+        <field name="name">Liquidación Semanal de Taller</field>
+        <field name="res_model">destajo.semanal</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea una planilla semanal para cargar las piezas del taller y transferirlas a nómina.
+            </p>
+        </field>
+    </record>
+</odoo>

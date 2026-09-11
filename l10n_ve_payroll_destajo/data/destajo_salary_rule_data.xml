@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Tipo de Entrada: Pago por Producción / Destajo (USD) -->
+        <record id="hr_payslip_input_type_produccion_destajo" model="hr.payslip.input.type">
+            <field name="name">Pago por Producción / Destajo (USD)</field>
+            <field name="code">PRODUCCION</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Asignación Salarial: Pago por Producción / Destajo (USD a Tasa BCV) -->
+        <record id="hr_salary_rule_destajo_produccion" model="hr.salary.rule">
+            <field name="name">Pago por Producción / Destajo (USD a BCV)</field>
+            <field name="code">ASIG_PROD</field>
+            <field name="category_id" ref="hr_payroll.BASIC"/>
+            <field name="struct_id" ref="hr_payroll.structure_002"/>
+            <field name="sequence" type="int">2</field>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = any(l.code == 'PRODUCCION' and l.amount > 0 for l in payslip.input_line_ids)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+input_line = payslip.input_line_ids.filtered(lambda l: l.code == 'PRODUCCION')
+if input_line and input_line[0].amount > 0:
+    result = input_line[0].amount * payslip.l10n_ve_bcv_rate
+else:
+    result = 0.0
+            </field>
+        </record>
+    </data>
+</odoo>

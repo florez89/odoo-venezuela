@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Lista Productos / Prendas -->
+    <record id="view_destajo_producto_list" model="ir.ui.view">
+        <field name="name">destajo.producto.list</field>
+        <field name="model">destajo.producto</field>
+        <field name="arch" type="xml">
+            <list string="Productos y Prendas de Producción">
+                <field name="name" string="Nombre del Producto / Prenda"/>
+                <field name="code" string="Código / Ref"/>
+                <field name="total_operaciones" string="N° Operaciones"/>
+                <field name="costo_unitario_total" string="Costo M.O. Total ($ USD)" decoration-bf="1"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Productos / Prendas -->
+    <record id="view_destajo_producto_form" model="ir.ui.view">
+        <field name="name">destajo.producto.form</field>
+        <field name="model">destajo.producto</field>
+        <field name="arch" type="xml">
+            <form string="Producto / Prenda">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Nombre del Producto / Prenda"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Camisa Manga Corta Colegial, Pantalón Jean..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="Ej: CMC-01, PJC..."/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="total_operaciones" readonly="1"/>
+                            <field name="costo_unitario_total" readonly="1" decoration-bf="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Operaciones y Tarifas ($ USD)">
+                            <field name="operacion_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name" string="Operación / Tarea"/>
+                                    <field name="price_usd" string="Tarifa ($ USD)" sum="Total M.O."/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Descripción / Ficha Técnica">
+                            <field name="description" placeholder="Instrucciones de confección, tipo de tela, observaciones..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción Producto / Prenda -->
+    <record id="action_destajo_producto" model="ir.actions.act_window">
+        <field name="name">Productos y Prendas</field>
+        <field name="res_model">destajo.producto</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea el primer producto o prenda para configurar sus operaciones y tarifas en USD.
+            </p>
+        </field>
+    </record>
+</odoo>

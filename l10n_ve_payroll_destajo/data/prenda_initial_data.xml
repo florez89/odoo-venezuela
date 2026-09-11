@@ -1,0 +1,941 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Prenda: PJC -->
+        <record id="prenda_pjc" model="destajo.producto">
+            <field name="name">PJC</field>
+            <field name="code">PJC</field>
+        </record>
+        <record id="op_prenda_pjc_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte vista y contravista</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.0350</field>
+        </record>
+        <record id="op_prenda_pjc_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Pespunte de reboke</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0280</field>
+        </record>
+        <record id="op_prenda_pjc_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte y orillo de relojero</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_pjc_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte de medio luna Reboke</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_pjc_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Asegurada de delantero</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_pjc_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Dibujo de bolsillo trasero</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Orillos de bolsillo trasero</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte de trasero</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.0650</field>
+        </record>
+        <record id="op_prenda_pjc_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Cañon de trasero yoky y ambos (1ra opcion)</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pjc_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte de yoky en overlock (2da opcion)</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_pjc_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Ambos traseros en overlock</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0150</field>
+        </record>
+        <record id="op_prenda_pjc_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Preparacion de cierres</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pjc_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Monte y pespunte de cierre</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Vuelta y union de cierre</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pjc_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Remate</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pjc_16" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Ruedo</field>
+            <field name="sequence">160</field>
+            <field name="price_usd">0.0370</field>
+        </record>
+        <record id="op_prenda_pjc_17" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Puntas</field>
+            <field name="sequence">170</field>
+            <field name="price_usd">0.0050</field>
+        </record>
+        <record id="op_prenda_pjc_18" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Ojal</field>
+            <field name="sequence">180</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+        <record id="op_prenda_pjc_19" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Botones</field>
+            <field name="sequence">190</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+        <record id="op_prenda_pjc_20" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Prencillas completas</field>
+            <field name="sequence">200</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pjc_21" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Empretinada</field>
+            <field name="sequence">210</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pjc_22" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Añadida de pretinas</field>
+            <field name="sequence">220</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_23" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Añadida de pretinas</field>
+            <field name="sequence">230</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_24" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Hechura de pasantes</field>
+            <field name="sequence">240</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_25" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Pespunte de costado corto</field>
+            <field name="sequence">250</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pjc_26" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">pespunte de costado largo</field>
+            <field name="sequence">260</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pjc_27" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Pespunte de piernas</field>
+            <field name="sequence">270</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pjc_28" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Encargado Ramon</field>
+            <field name="sequence">280</field>
+            <field name="price_usd">0.6000</field>
+        </record>
+        <record id="op_prenda_pjc_29" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pjc"/>
+            <field name="name">Encargado Henry</field>
+            <field name="sequence">290</field>
+            <field name="price_usd">0.1400</field>
+        </record>
+
+        <!-- Prenda: PVC -->
+        <record id="prenda_pvc" model="destajo.producto">
+            <field name="name">PVC</field>
+            <field name="code">PVC</field>
+        </record>
+        <record id="op_prenda_pvc_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Vista y contravista</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.0360</field>
+        </record>
+        <record id="op_prenda_pvc_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Pliegues</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pvc_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Monte y pespunte</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0270</field>
+        </record>
+        <record id="op_prenda_pvc_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Asegurado de Bolsillo delantero</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0370</field>
+        </record>
+        <record id="op_prenda_pvc_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Cierre preparacion</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pvc_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Cierre monte y espunte</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pvc_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Cierre vuelta y union</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pvc_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Bolsillos traseros</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.0220</field>
+        </record>
+        <record id="op_prenda_pvc_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Bolsillos delanteros</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.0150</field>
+        </record>
+        <record id="op_prenda_pvc_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Curvas traseras</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0150</field>
+        </record>
+        <record id="op_prenda_pvc_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Curvas delanteras de cierre</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0120</field>
+        </record>
+        <record id="op_prenda_pvc_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Tacos y aletillas</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.0120</field>
+        </record>
+        <record id="op_prenda_pvc_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Costados</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.0390</field>
+        </record>
+        <record id="op_prenda_pvc_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Entrepiernas</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_pvc_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Embonado de traseros</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pvc_16" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Embonado de delantero</field>
+            <field name="sequence">160</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pvc_17" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Prencillas</field>
+            <field name="sequence">170</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pvc_18" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Pespunte trasero con forro</field>
+            <field name="sequence">180</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_pvc_19" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Pinzas traseras</field>
+            <field name="sequence">190</field>
+            <field name="price_usd">0.0220</field>
+        </record>
+        <record id="op_prenda_pvc_20" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Vistas</field>
+            <field name="sequence">200</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pvc_21" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Bolsillos en 42</field>
+            <field name="sequence">210</field>
+            <field name="price_usd">0.0650</field>
+        </record>
+        <record id="op_prenda_pvc_22" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Bolsillo trasero asegurado</field>
+            <field name="sequence">220</field>
+            <field name="price_usd">0.0130</field>
+        </record>
+        <record id="op_prenda_pvc_23" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Bolsillo trasero picado</field>
+            <field name="sequence">230</field>
+            <field name="price_usd">0.0130</field>
+        </record>
+        <record id="op_prenda_pvc_24" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Puntas</field>
+            <field name="sequence">240</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pvc_25" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Ruedos</field>
+            <field name="sequence">250</field>
+            <field name="price_usd">0.0370</field>
+        </record>
+        <record id="op_prenda_pvc_26" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Ojal y Boton</field>
+            <field name="sequence">260</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pvc_27" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Pretinas añadidas</field>
+            <field name="sequence">270</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pvc_28" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Pasantes hechos y cortados</field>
+            <field name="sequence">280</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pvc_29" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Remate</field>
+            <field name="sequence">290</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pvc_30" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pvc"/>
+            <field name="name">Empretinada</field>
+            <field name="sequence">300</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+
+        <!-- Prenda: Pantalon tactico -->
+        <record id="prenda_pantalon_tactico" model="destajo.producto">
+            <field name="name">Pantalon tactico</field>
+            <field name="code">PANTALON_TACTICO</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Bolsillos delantero</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.0130</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Pespunte de bolsillo delantero</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Cierre preparacion</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Cierre montura y pespunte</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Montaje de cierre magico en tapa pequeña C. largo (lleva 2)</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Monte de cierre magico en tapa larga de costado (lleva 4)</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Cierre magico al Tracera (lleva 2)</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Cierre magico al bolsillo</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Costado</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Cierre vuelta y union</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Pospunte de costado</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Montada de rodilleras delanteras</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Montada de rodilleras traceras</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.0800</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Puntos</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Ruedos</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_16" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Remate</field>
+            <field name="sequence">160</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_17" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Media luna tracera</field>
+            <field name="sequence">170</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_18" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Tapas de costados monte y pespunte</field>
+            <field name="sequence">180</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_19" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Monte de bolsillo de costado</field>
+            <field name="sequence">190</field>
+            <field name="price_usd">0.2000</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_20" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Bolsillo de costado p</field>
+            <field name="sequence">200</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_21" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Ruedo de bolsillo de costado</field>
+            <field name="sequence">210</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_22" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Pespunte de tapa pequeña</field>
+            <field name="sequence">220</field>
+            <field name="price_usd">0.0450</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_23" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Pespunte tapa grande costado</field>
+            <field name="sequence">230</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_24" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Prencillas tacticas</field>
+            <field name="sequence">240</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_25" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Empretinadada</field>
+            <field name="sequence">250</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_26" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Pasantes anchos</field>
+            <field name="sequence">260</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_27" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Añadida de pretina</field>
+            <field name="sequence">270</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_28" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Bolsillo en 42</field>
+            <field name="sequence">280</field>
+            <field name="price_usd">0.0650</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_29" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Vistas traceras</field>
+            <field name="sequence">290</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_30" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Bolsillo asegurado  con tapa</field>
+            <field name="sequence">300</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_31" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Ojal de la pierna</field>
+            <field name="sequence">310</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_32" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Ojal de pretina</field>
+            <field name="sequence">320</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+        <record id="op_prenda_pantalon_tactico_33" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_pantalon_tactico"/>
+            <field name="name">Botones</field>
+            <field name="sequence">330</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+
+        <!-- Prenda: Cam.Manga Corta Colegial -->
+        <record id="prenda_cam_manga_corta_colegial" model="destajo.producto">
+            <field name="name">Cam.Manga Corta Colegial</field>
+            <field name="code">CAM_MANGA_CORTA_COLEGIAL</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">encargado de taller</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.2000</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Corte</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.2000</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Pespunte de hombro</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0350</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Ruedo de manga</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Pechera 3 costuras</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Ruedo largo</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Preparacion de cuello</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.1800</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Montada de cuello</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Orilla de bolsillo y montada</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Monte de hombros</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0150</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Monte de manga</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Cerrada de costado</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.0450</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Remate completo</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Espalda monte de canesu y pespuntada completa</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.0900</field>
+        </record>
+        <record id="op_prenda_cam_manga_corta_colegial_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_cam_manga_corta_colegial"/>
+            <field name="name">Ojales varios C/ojales y botones</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+
+        <!-- Prenda: Camisa Manga Larga -->
+        <record id="prenda_camisa_manga_larga" model="destajo.producto">
+            <field name="name">Camisa Manga Larga</field>
+            <field name="code">CAMISA_MANGA_LARGA</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Carterita</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Pespunte de hombro</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0350</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Pechera 3 costuras</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Ruedo largo</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Preparacion de cuello</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.1800</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Monte y pespunte de cuello</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Orilla de bolsillo y montada</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Monte de hombros</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Montada de manga</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Sellado de costado</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Espalda monte de canesu y pespuntada completa</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0900</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Pespunte completo</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Ojales varios y botones</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Puños preparados c/pespunte</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.1500</field>
+        </record>
+        <record id="op_prenda_camisa_manga_larga_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_camisa_manga_larga"/>
+            <field name="name">Puños montados y pespuntiados</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+
+        <!-- Prenda: Falda colegial -->
+        <record id="prenda_falda_colegial" model="destajo.producto">
+            <field name="name">Falda colegial</field>
+            <field name="code">FALDA_COLEGIAL</field>
+        </record>
+        <record id="op_prenda_falda_colegial_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Tachon</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.1700</field>
+        </record>
+        <record id="op_prenda_falda_colegial_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Bolsillos</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0700</field>
+        </record>
+        <record id="op_prenda_falda_colegial_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Ruedos</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0600</field>
+        </record>
+        <record id="op_prenda_falda_colegial_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Costuritas de ruedo</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_falda_colegial_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Cierres</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.1000</field>
+        </record>
+        <record id="op_prenda_falda_colegial_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Costura lateral</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_falda_colegial_7" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Empretinada</field>
+            <field name="sequence">70</field>
+            <field name="price_usd">0.0400</field>
+        </record>
+        <record id="op_prenda_falda_colegial_8" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Añadida de pretinas</field>
+            <field name="sequence">80</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_falda_colegial_9" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Montada de short</field>
+            <field name="sequence">90</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+        <record id="op_prenda_falda_colegial_10" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Remate</field>
+            <field name="sequence">100</field>
+            <field name="price_usd">0.0700</field>
+        </record>
+        <record id="op_prenda_falda_colegial_11" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Ojal y boton</field>
+            <field name="sequence">110</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+        <record id="op_prenda_falda_colegial_12" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Costado</field>
+            <field name="sequence">120</field>
+            <field name="price_usd">0.3000</field>
+        </record>
+        <record id="op_prenda_falda_colegial_13" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Costado fileteado doble</field>
+            <field name="sequence">130</field>
+            <field name="price_usd">0.0350</field>
+        </record>
+        <record id="op_prenda_falda_colegial_14" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Bolsillo delantero</field>
+            <field name="sequence">140</field>
+            <field name="price_usd">0.0100</field>
+        </record>
+        <record id="op_prenda_falda_colegial_15" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Filetero de ruedo</field>
+            <field name="sequence">150</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_falda_colegial_16" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_falda_colegial"/>
+            <field name="name">Puntos</field>
+            <field name="sequence">160</field>
+            <field name="price_usd">0.0500</field>
+        </record>
+
+        <!-- Prenda: Short de Falda -->
+        <record id="prenda_short_de_falda" model="destajo.producto">
+            <field name="name">Short de Falda</field>
+            <field name="code">SHORT_DE_FALDA</field>
+        </record>
+        <record id="op_prenda_short_de_falda_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_short_de_falda"/>
+            <field name="name">Cerrada de costado</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.0300</field>
+        </record>
+        <record id="op_prenda_short_de_falda_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_short_de_falda"/>
+            <field name="name">Ambos A</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.0250</field>
+        </record>
+        <record id="op_prenda_short_de_falda_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_short_de_falda"/>
+            <field name="name">Entre piernas cerrda</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.0120</field>
+        </record>
+        <record id="op_prenda_short_de_falda_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_short_de_falda"/>
+            <field name="name">Filetero de ruedos</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.0200</field>
+        </record>
+
+        <!-- Prenda: Servicios Varios -->
+        <record id="prenda_servicios_varios" model="destajo.producto">
+            <field name="name">Servicios Varios</field>
+            <field name="code">SERVICIOS_VARIOS</field>
+        </record>
+        <record id="op_prenda_servicios_varios_1" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Bolsillos traseros en 42</field>
+            <field name="sequence">10</field>
+            <field name="price_usd">0.3000</field>
+        </record>
+        <record id="op_prenda_servicios_varios_2" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Pantalon empretinado</field>
+            <field name="sequence">20</field>
+            <field name="price_usd">0.1200</field>
+        </record>
+        <record id="op_prenda_servicios_varios_3" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Pantalon prencillado</field>
+            <field name="sequence">30</field>
+            <field name="price_usd">0.3000</field>
+        </record>
+        <record id="op_prenda_servicios_varios_4" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Corte de pantalon</field>
+            <field name="sequence">40</field>
+            <field name="price_usd">0.3000</field>
+        </record>
+        <record id="op_prenda_servicios_varios_5" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Corte de Camisa</field>
+            <field name="sequence">50</field>
+            <field name="price_usd">0.3000</field>
+        </record>
+        <record id="op_prenda_servicios_varios_6" model="destajo.operacion">
+            <field name="producto_id" ref="prenda_servicios_varios"/>
+            <field name="name">Corte de Franelas</field>
+            <field name="sequence">60</field>
+            <field name="price_usd">0.2000</field>
+        </record>
+    </data>
+</odoo>

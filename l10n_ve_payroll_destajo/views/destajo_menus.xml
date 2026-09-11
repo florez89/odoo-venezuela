@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú Principal: Taller y Destajo (App Dashboard) -->
+    <menuitem id="menu_destajo_root" 
+              name="Taller y Destajo" 
+              web_icon="l10n_ve_payroll_destajo,static/description/icon.png"
+              sequence="75"/>
+
+    <!-- Submenús de Operación -->
+    <menuitem id="menu_destajo_semanal" 
+              name="Liquidación Semanal" 
+              parent="menu_destajo_root" 
+              action="action_destajo_semanal" 
+              sequence="10"/>
+
+    <menuitem id="menu_destajo_lote" 
+              name="Cortes y Lotes" 
+              parent="menu_destajo_root" 
+              action="action_destajo_lote" 
+              sequence="20"/>
+
+    <!-- Submenú de Configuración -->
+    <menuitem id="menu_destajo_config" 
+              name="Configuración" 
+              parent="menu_destajo_root" 
+              sequence="50"/>
+
+    <menuitem id="menu_destajo_producto" 
+              name="Productos y Tarifas" 
+              parent="menu_destajo_config" 
+              action="action_destajo_producto" 
+              sequence="10"/>
+</odoo>

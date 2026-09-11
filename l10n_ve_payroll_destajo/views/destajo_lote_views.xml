@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Lista Lotes / Cortes -->
+    <record id="view_destajo_lote_list" model="ir.ui.view">
+        <field name="name">destajo.lote.list</field>
+        <field name="model">destajo.lote</field>
+        <field name="arch" type="xml">
+            <list string="Lotes y Cortes de Producción" decoration-info="state == 'in_progress'" decoration-success="state == 'done'" decoration-muted="state == 'cancel'">
+                <field name="name" string="N° Corte / Lote"/>
+                <field name="date" string="Fecha"/>
+                <field name="producto_id" string="Producto / Prenda"/>
+                <field name="total_piezas" string="Piezas Cortadas" sum="Total Cortadas"/>
+                <field name="total_piezas_registradas" string="Piezas Registradas"/>
+                <field name="porcentaje_avance" string="% Avance" widget="progressbar"/>
+                <field name="costo_total_acumulado_usd" string="Total Devengado ($ USD)" sum="Total USD"/>
+                <field name="cortador_id" string="Cortador"/>
+                <field name="state" widget="badge" decoration-info="state == 'in_progress'" decoration-success="state == 'done'" decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Lotes / Cortes -->
+    <record id="view_destajo_lote_form" model="ir.ui.view">
+        <field name="name">destajo.lote.form</field>
+        <field name="model">destajo.lote</field>
+        <field name="arch" type="xml">
+            <form string="Lote de Producción / Corte">
+                <header>
+                    <button name="action_start" string="Iniciar Producción" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_done" string="Finalizar Lote" type="object" class="btn-success" invisible="state != 'in_progress'"/>
+                    <button name="action_draft" string="Volver a Borrador" type="object" invisible="state not in ('done', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Código / N° de Corte o Lote"/>
+                        <h1>
+                            <field name="name" placeholder="Ej: Corte #487 - Camisa Manga Corta"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="producto_id" string="Producto / Prenda"/>
+                            <field name="date" string="Fecha de Inicio / Corte"/>
+                            <field name="total_piezas" string="Total Piezas Cortadas"/>
+                        </group>
+                        <group>
+                            <field name="cortador_id" string="Cortador Asignado"/>
+                            <field name="encargado_id" string="Encargado / Supervisor"/>
+                            <field name="porcentaje_avance" widget="progressbar"/>
+                            <field name="costo_total_acumulado_usd" readonly="1" decoration-bf="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Historial de Piezas Registradas">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="semanal_id" string="Semana"/>
+                                    <field name="employee_id" string="Trabajador"/>
+                                    <field name="operacion_id" string="Operación"/>
+                                    <field name="qty" string="Cant. Piezas"/>
+                                    <field name="price_usd" string="Tarifa ($)"/>
+                                    <field name="total_usd" string="Subtotal ($)" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas y Observaciones">
+                            <field name="notes" placeholder="Detalles de la tela, rollo, mermas, observaciones de calidad..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción Lotes -->
+    <record id="action_destajo_lote" model="ir.actions.act_window">
+        <field name="name">Lotes y Cortes de Producción</field>
+        <field name="res_model">destajo.lote</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra un corte de tela para iniciar el control de piezas por confeccionar.
+            </p>
+        </field>
+    </record>
+</odoo>
