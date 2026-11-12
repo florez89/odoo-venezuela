@@ -5,7 +5,13 @@ from odoo.exceptions import UserError
 class TaxUnit(models.Model):
     _inherit = "tax.unit"
 
-    available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True)
+    available_date = fields.Date(
+        string="Publish Date",
+        store=True,
+        tracking=True,
+        required=True,
+        default=fields.Date.context_today,
+    )
 
     @api.constrains('value', 'available_date')
     def _check_unique_tax_unit(self):
