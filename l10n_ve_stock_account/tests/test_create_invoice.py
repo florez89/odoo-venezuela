@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import Command
+
+from .common import StockAccountTestCommon
 
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install", "test_create_invoice")
-class TestCreateInvoiceFromPicking(TransactionCase):
+class TestCreateInvoiceFromPicking(StockAccountTestCommon):
     """
     Tests for create_invoice and create_multi_invoice methods
     on stock.picking.
@@ -18,20 +20,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        # --- Currencies ---
-        cls.currency_usd = cls.env.ref("base.USD")
-        cls.currency_usd.active = True
-
-        cls.currency_vef = cls.env.ref("base.VEF")
-        cls.currency_vef.active = True
-
-        # --- Company ---
-        cls.company = cls.env.company
-        cls.company.write({
-            "currency_id": cls.currency_vef.id,
-            "foreign_currency_id": cls.currency_usd.id,
-        })
 
         # --- Journal (required by create_invoice / create_multi_invoice) ---
         cls.sale_journal = cls.env["account.journal"].search(
@@ -45,15 +33,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
                 "company_id": cls.company.id,
             })
         cls.company.customer_journal_id = cls.sale_journal.id
-
-        # --- Tax ---
-        cls.sale_tax = cls.env["account.tax"].create({
-            "name": "Tax 16%",
-            "amount": 16,
-            "type_tax_use": "sale",
-            "company_id": cls.company.id,
-        })
-        cls.company.account_sale_tax_id = cls.sale_tax.id
 
         # --- Income Account (required for invoice lines) ---
         cls.income_account = cls.env["account.account"].create({
@@ -86,6 +65,16 @@ class TestCreateInvoiceFromPicking(TransactionCase):
             "name": "Tarifa VES",
             "currency_id": cls.currency_vef.id,
             "company_id": cls.company.id,
+        })
+
+        # _create_sale_order() fija date_order en "2026-02-01": compute_rate()
+        # exige una tasa con esa fecha EXACTA (no la mas cercana), distinta de
+        # la tasa de "hoy" que ya crea StockAccountTestCommon.
+        cls.env["res.currency.rate"].create({
+            "currency_id": cls.currency_usd.id,
+            "company_id": cls.company.id,
+            "name": "2026-02-01",
+            "rate": 1.0 / 380.0,
         })
 
     # =========================================================================
@@ -363,3 +352,30 @@ class TestCreateInvoiceFromPicking(TransactionCase):
         self.assertEqual(action["res_id"], invoice.id)
         self.assertEqual(action["context"].get("default_move_type"), "out_invoice")
         self.assertEqual(action["context"].get("default_partner_id"), picking.partner_id.id)
+
+    # =========================================================================
+    # Reversal of invoices created from pickings
+    # =========================================================================
+
+    def test_reverse_invoice_from_picking_unlocks_refund_lines(self):
+        """Regression (ticket 16194): reversing an invoice created from a
+        picking must not carry from_picking_line to the credit note, otherwise
+        its lines stay read-only and a partial credit note is impossible.
+        The original invoice keeps its lines locked."""
+        picking = self._create_sale_order(pricelist=self.pricelist_ves, qty=3)
+        invoice = picking.create_invoice()
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+        self.assertTrue(product_lines)
+        self.assertTrue(all(product_lines.mapped("from_picking_line")))
+
+        refund = invoice._reverse_moves()
+
+        self.assertEqual(refund.move_type, "out_refund")
+        self.assertEqual(refund.reversed_entry_id, invoice)
+        refund_lines = refund.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+        self.assertEqual(len(refund_lines), len(product_lines))
+        self.assertFalse(any(refund_lines.mapped("from_picking_line")))
+        self.assertTrue(all(product_lines.mapped("from_picking_line")))
+
+        refund_lines[0].quantity = 1
+        self.assertEqual(refund_lines[0].quantity, 1)

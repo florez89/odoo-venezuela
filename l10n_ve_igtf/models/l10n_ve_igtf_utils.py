@@ -1,5 +1,6 @@
 from odoo import api, fields, models
 from odoo.tools import float_is_zero, float_compare
+from odoo.exceptions import UserError
 
 
 class IGTFUtils(models.AbstractModel):
@@ -9,19 +10,20 @@ class IGTFUtils(models.AbstractModel):
     @api.model
     def calculate_igtf_for_payment(
         self, invoice, amount_payment, payment_currency,
-        payment_date, company=None, base=False
+        payment_date, company=None, base=False, indexed_default=True
     ):
         company = company or self.env.company
         currency = invoice.currency_id
         precision = currency.rounding
-        date_conver = invoice.invoice_date if payment_date <= invoice.invoice_date else payment_date
+        date_conver = payment_date if indexed_default else invoice.invoice_date
 
-        due_amount = self._convert_to_company_currency(
-            invoice.currency_id, invoice.amount_residual, date_conver, company
-        )
-        payment_amount = self._convert_to_company_currency(
-            payment_currency, amount_payment, date_conver, company
-        )
+        due_amount = invoice.amount_residual  # ya está en currency
+        if payment_currency == currency:
+            payment_amount = amount_payment
+        else:
+            payment_amount = payment_currency._convert(
+                amount_payment, currency, company, date_conver,
+            )
 
         principal_amount = min(payment_amount, due_amount)
         igtf_unrounded = principal_amount * (company.igtf_percentage / 100)
@@ -47,7 +49,9 @@ class IGTFUtils(models.AbstractModel):
             return 0.0
 
         if not base:
-            return self._convert_to_external_currency(payment_currency, igtf, date_conver, company)
+            if payment_currency == currency:
+                return igtf
+            return currency._convert(igtf, payment_currency, company, date_conver)
         return igtf
 
     @api.model
@@ -56,14 +60,14 @@ class IGTFUtils(models.AbstractModel):
         if from_currency == company_currency and invoice_currency == company_currency:
             return amount
         elif from_currency == company_currency and invoice_currency and invoice_currency != company_currency:
-            return invoice_currency._convert(amount, company_currency, company, date or fields.Date.today())
+            return invoice_currency._convert(amount, company_currency, company, date or fields.Date.context_today(self))
         else:
-            return from_currency._convert(amount, company_currency, company, date or fields.Date.today())
+            return from_currency._convert(amount, company_currency, company, date or fields.Date.context_today(self))
 
     @api.model
     def _convert_to_external_currency(self, from_currency, amount, date, company):
         company_currency = company.currency_id
-        return company_currency._convert(amount, from_currency, company, date or fields.Date.today())
+        return company_currency._convert(amount, from_currency, company, date or fields.Date.context_today(self))
 
     @api.model
     def get_moves_from_context(self):

@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import Counter
 from odoo import models, fields, api, _
 from odoo.exceptions import MissingError, ValidationError
 from ...tools import binaural_cne_query
@@ -56,6 +57,43 @@ class ResPartner(models.Model):
         help="Prefix of the VAT number",
         tracking=True,
     )
+
+    @api.constrains("name")
+    def _check_name_immutable(self):
+        if not self.env.company.validate_partner_name_immutable:
+            return
+
+        if self.env.user.has_group(
+            "l10n_ve_contact.group_edit_partner_name_immutable"
+        ):
+            return
+
+        model_checks = {
+            "sale.order": [("partner_id", "=", "id")],
+            "purchase.order": [("partner_id", "=", "id")],
+            "account.move": [
+                ("partner_id", "=", "id"),
+                ("move_type", "in", ["out_invoice", "in_invoice"]),
+            ],
+            "account.move.line": [("partner_id", "=", "id")],
+        }
+
+        for partner in self:
+            for model, domain in model_checks.items():
+                if model not in self.env.registry.models:
+                    continue
+                # Replace 'id' placeholder with actual partner.id
+                resolved_domain = [
+                    (field, op, partner.id if val == "id" else val)
+                    for field, op, val in domain
+                ]
+                if self.env[model].search_count(resolved_domain) > 0:
+                    raise ValidationError(
+                        _(
+                            "You cannot modify the name of a contact with associated "
+                            "transactions."
+                        )
+                    )
 
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
         error_message = ""
@@ -147,20 +185,58 @@ class ResPartner(models.Model):
             if "vat" and "prefix_vat" in vals:
                 self.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
-            if "email" in vals:
+            if "email" in vals and vals.get("type", "contact") == "contact":
                 self.check_duplicate_email(vals.get("email"))
-        return super(ResPartner, self).create(vals_list)
+        partners = super(ResPartner, self).create(vals_list)
+        # The check above only sees partners already in the database, so two
+        # contacts of the same batch (an import) with the same email let each
+        # other in. Once created they can see each other. Only contacts are
+        # counted: an address of the batch sharing a contact's email doesn't
+        # trigger the check.
+        batch_emails = Counter(
+            partner.email for partner in partners
+            if partner.type == "contact" and partner.email
+        )
+        for partner in partners:
+            if partner.type == "contact" and batch_emails[partner.email] > 1:
+                partner.check_duplicate_email(partner.email)
+        return partners
 
     def write(self, vals):
+        # Only the contacts whose email really changes are checked: writing back
+        # the email a contact already has (e.g. a form, an import or any process
+        # that sends every field) must not fail because another partner shares it.
+        email_changed = self.browse()
+        if "email" in vals:
+            email_changed = self.filtered(lambda partner: partner.email != vals["email"])
         res = super().write(vals)
         if "prefix_vat" and "vat" in vals:
             for record in self:
                 record.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
-            for record in self:
-                record.check_duplicate_email(vals.get("email"))
+            for record in email_changed:
+                if record.type == "contact":
+                    record.check_duplicate_email(vals.get("email"))
         return res
+
+    @api.model
+    def _get_view(self, view_id=None, view_type="form", **options):
+        """Keep the digits-only widget on the CI/RIF of the partner forms.
+
+        partner_autocomplete (auto_install) forces its IAP search widget on
+        every ``vat`` of a partner form, which drops ``l10n_ve_vat`` set in
+        views/res_partner.xml and lets letters in again, also in the PoS form
+        (there it falls back to the plain char field). Searching IAP by the
+        number without its prefix finds nothing, so the CI/RIF keeps ours.
+        This override wins because l10n_ve_contact loads after
+        partner_autocomplete (it is deeper in the dependency graph).
+        """
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == "form":
+            for node in arch.xpath("//field[@name='vat'][@widget='field_partner_autocomplete']"):
+                node.set("widget", "l10n_ve_vat")
+        return arch, view
 
     def _check_vat(self):
         pattern = "^[0-9]*$"
