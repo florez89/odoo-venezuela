@@ -18,6 +18,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.foreign_currency_id",
         readonly=False,
     )
+    rate_max_age_days = fields.Integer(
+        related="company_id.rate_max_age_days",
+        readonly=False,
+    )
 
     @api.constrains("foreign_currency_id")
     def _check_currency_foreign_id(self):
