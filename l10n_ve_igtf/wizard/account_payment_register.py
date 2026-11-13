@@ -26,7 +26,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
     amount_without_difference = fields.Monetary(
         string="Amount without Difference",
-        compute="_compute_amount", readonly=False 
+        compute="_compute_amount", readonly=False,
     )
 
     def _default_igtf_percent_from_company(self):
@@ -40,12 +40,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     )
 
     igtf_amount = fields.Float(
-        string="IGTF Amount", 
+        string="IGTF Amount",
         help="IGTF Amount",
-        compute="_compute_amount", readonly=False
-        
+        compute="_compute_amount", readonly=False,
     )
-    igtf_to_show = fields.Monetary(string="Amount with IGTF",compute="_compute_amount", readonly=False)
+    igtf_to_show = fields.Monetary(
+        string="IGTF to Show", compute="_compute_amount", readonly=False,
+    )
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
@@ -82,7 +83,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         other_wizards = self - igtf_wizards
 
         if other_wizards:
-            return super(AccountPaymentRegisterIgtf, other_wizards)._compute_amount()
+            super(AccountPaymentRegisterIgtf, other_wizards)._compute_amount()
+            other_wizards.update({
+                "igtf_amount": 0.0,
+                "igtf_to_show": 0.0,
+                "amount_without_difference": 0.0,
+            })
 
         for wizard in igtf_wizards:
             total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
@@ -93,10 +99,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 wizard.amount_without_difference = 0.0
 
             elif wizard.custom_user_amount:
-                move_ids = self.get_moves()
+                move_ids = wizard.get_moves()
                 igtf = 0.0
                 for rec in move_ids:
-                    igtf += self.calculate_igtf_for_payment(
+                    igtf += wizard.calculate_igtf_for_payment(
                         rec, wizard.amount, wizard.currency_id, wizard.payment_date,
                     )
                 wizard.igtf_to_show = abs(igtf)
@@ -114,10 +120,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
             else:
                 
-                move_ids = self.get_moves()
+                move_ids = wizard.get_moves()
                 igtf = 0.0
                 for rec in move_ids:
-                    igtf += self.calculate_igtf_for_payment(
+                    igtf += wizard.calculate_igtf_for_payment(
                         rec, total_amount_values['amount_by_default'], wizard.currency_id, wizard.payment_date,
                     )
                 wizard.amount_without_difference = total_amount_values['amount_by_default']
@@ -140,9 +146,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if wizard.payment_date:
                 total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
                 igtf = 0.0
-                move_ids = self.get_moves()
+                move_ids = wizard.get_moves()
                 for rec in move_ids:
-                    igtf += self.calculate_igtf_for_payment(
+                    igtf += wizard.calculate_igtf_for_payment(
                         rec, wizard.amount, wizard.currency_id, wizard.payment_date,
                     )
                 efective_amount = abs(wizard.amount) - abs(igtf)
@@ -169,7 +175,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             payment.is_igtf_on_foreign_exchange = False
             if payment.journal_id.is_igtf:
 
-                move_ids = self.get_moves()
+                move_ids = payment.get_moves()
                 for move_id in move_ids:
                     # Skip IGTF for invoices belonging to international purchase journals
                     if move_id.journal_id.is_purchase_international:
@@ -192,10 +198,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         for payment in igtf_wizards:
             total_amount_values = payment._get_total_amounts_to_pay(payment.batches)
-            move_ids = self.get_moves()
+            move_ids = payment.get_moves()
             igtf = 0.0
             for rec in move_ids:
-                igtf += self.calculate_igtf_for_payment(
+                igtf += payment.calculate_igtf_for_payment(
                     rec, payment.amount, payment.currency_id, payment.payment_date,
                 )
             natural_amount = total_amount_values['amount_by_default'] + abs(igtf)

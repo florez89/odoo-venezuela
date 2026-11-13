@@ -278,3 +278,31 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
             payment_model._is_same_within_rounding(21759665.40, 21730605.49, comp_curr),
             "A large, real discrepancy must not be absorbed as rounding noise.",
         )
+
+    def test_non_igtf_wizard_assigns_igtf_fields(self):
+        """Without IGTF, the fields computed alongside `amount` must still be
+        assigned (zero) instead of being left unset by the compute method."""
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.payment_date, 40.0)
+        invoice = self._create_foreign_invoice(self.currency_usd, amount=100.0)
+        wizard = self._create_igtf_wizard(invoice)
+        wizard.is_igtf = False
+        wizard._compute_amount()
+        self.assertEqual(wizard.igtf_amount, 0.0)
+        self.assertEqual(wizard.igtf_to_show, 0.0)
+        self.assertEqual(wizard.amount_without_difference, 0.0)
+
+    def test_mixed_batch_computes_igtf_wizards(self):
+        """A recordset mixing wizards with and without IGTF must compute both:
+        the IGTF ones were skipped by an early return."""
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.payment_date, 40.0)
+        igtf_wizard = self._create_igtf_wizard(
+            self._create_foreign_invoice(self.currency_usd, amount=100.0)
+        )
+        plain_wizard = igtf_wizard.copy()
+        plain_wizard.is_igtf = False
+        igtf_wizard.igtf_amount = 0.0
+        (igtf_wizard | plain_wizard)._compute_amount()
+        self.assertAlmostEqual(igtf_wizard.igtf_amount, 3.0, places=2)
+        self.assertEqual(plain_wizard.igtf_amount, 0.0)
