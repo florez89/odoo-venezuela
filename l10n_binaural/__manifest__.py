@@ -1,6 +1,8 @@
 {
     "name": "Venezuela - Plan de cuentas",
     "version": "18.0.0.0.0",
+    # Legacy chart superseded by l10n_ve_binaural: its data files are no longer in the repository.
+    "installable": False,
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
     "depends": ["base", "account", "account_accountant", "stock", "sale", "contacts"],
