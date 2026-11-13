@@ -56,15 +56,21 @@ class TestComputeRateFallback(TransactionCase):
 
         for day, rate in ((date(2023, 6, 1), jan), (date(2030, 1, 1), dec)):
             with self.subTest(day=day):
-                result = self.Rate.compute_rate(self.foreign_currency.id, day)
+                result = self.Rate.compute_rate(self.foreign_currency.id, day, with_rate_date=True)
                 self.assertEqual(result["foreign_rate"], rate.inverse_company_rate)
                 self.assertEqual(result["foreign_inverse_rate"], rate.company_rate)
                 self.assertEqual(result["rate_date"], rate.name)
 
     def test_compute_rate_returns_the_date_of_the_rate_used(self):
         exact = self._create_rate(date(2023, 6, 1), 45.0)
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
+        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1), with_rate_date=True)
         self.assertEqual(result["rate_date"], exact.name)
+
+    def test_compute_rate_omits_the_date_by_default(self):
+        """Callers write the result into records: an extra key would break them."""
+        self._create_rate(date(2023, 6, 1), 45.0)
+        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
+        self.assertEqual(set(result), {"foreign_rate", "foreign_inverse_rate"})
 
     def test_compute_rate_raises_when_only_later_rates_exist(self):
         """A rate published after the date is never used."""
@@ -190,7 +196,7 @@ class TestRateBranchInheritance(TransactionCase):
         previous = self._create_rate(self.parent, date(2023, 6, 1), 0.025)
 
         result = self.Rate.with_company(self.branch).compute_rate(
-            self.usd.id, date(2023, 6, 2),
+            self.usd.id, date(2023, 6, 2), with_rate_date=True,
         )
 
         self.assertEqual(result["foreign_rate"], previous.inverse_company_rate)

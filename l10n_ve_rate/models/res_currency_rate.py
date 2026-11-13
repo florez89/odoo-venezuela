@@ -11,7 +11,7 @@ class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
 
     @api.model
-    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
+    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True, with_rate_date=False):
         """
         Compute the rate and inverse rate for the given currency and date.
 
@@ -39,13 +39,17 @@ class ResCurrencyRate(models.Model):
             returning {}. Defaults to True: a search that finds no rate in force
             on rate_date must stop with "no rate assigned". Pass False only from
             a call site that can deliberately work without a rate.
+        with_rate_date : bool
+            Whether to add `rate_date`, the date of the rate used, to the result.
+            Off by default: several callers write the result straight into
+            records (`record.update(rate_values)`).
 
         Se usa la tasa vigente en `rate_date`: la más reciente con fecha menor o
         igual (como `res.currency._get_rates` de Odoo), así fines de semana y
         feriados usan la última publicada. Una tasa posterior nunca se usa. Si la
         moneda no tiene ninguna tasa hasta esa fecha se considera "no encontrada".
-        La antigüedad de la tasa la controla cada documento con `rate_date` del
-        resultado y `res.company.rate_max_age_days`.
+        La antigüedad de la tasa la controla cada documento con `rate_date`
+        (pedido con `with_rate_date=True`) y `res.company.rate_max_age_days`.
 
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
         sucursales nativas). Se busca primero en la compañía activa y, si no hay
@@ -62,7 +66,7 @@ class ResCurrencyRate(models.Model):
         -------
         dict
             A dictionary with the rate and inverse rate for the given currency and
-            date plus `rate_date`, the date of the rate used, or {} if no rate was
+            date (plus `rate_date` with with_rate_date=True), or {} if no rate was
             found and raise_if_not_found is False.
             The company currency without a recorded rate resolves to 1.0 / 1.0 (its rate
             against itself). {} is returned only when no foreign currency is given at
@@ -116,17 +120,18 @@ class ResCurrencyRate(models.Model):
 
         vef_id = self.env.company.currency_id.id
         if vef_id == foreign_currency_id:
-            return {
+            values = {
                 "foreign_rate": rate.company_rate,
                 "foreign_inverse_rate": rate.company_rate,
-                "rate_date": rate.name,
             }
         else:
-            return {
+            values = {
                 "foreign_rate": rate.inverse_company_rate,
                 "foreign_inverse_rate": rate.company_rate,
-                "rate_date": rate.name,
             }
+        if with_rate_date:
+            values["rate_date"] = rate.name
+        return values
 
     @api.model
     def compute_inverse_rate(self, rate):
