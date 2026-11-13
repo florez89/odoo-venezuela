@@ -1,10 +1,13 @@
+import json
 import logging
 from collections import defaultdict
+from contextlib import contextmanager
 
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import drop_index, float_compare, index_exists
+from odoo.tools import float_compare
+from odoo.tools.sql import drop_index, index_exists
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
 
@@ -27,7 +30,7 @@ class AccountMove(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -310,7 +313,7 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.foreign_currency_id.id
 
         res = super().get_view(view_id, view_type, **options)
 
@@ -489,7 +492,7 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         # self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
-        payment = self.payment_id
+        payment = self.origin_payment_id
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
         # payment to compute the foreign debit/credit.
@@ -508,7 +511,7 @@ class AccountMove(models.Model):
             line_foreign_currency_id = [
                 line
                 for line in self.line_ids
-                if line.currency_id == self.env.company.currency_foreign_id
+                if line.currency_id == self.env.company.foreign_currency_id
             ]
 
             for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
@@ -610,12 +613,16 @@ class AccountMove(models.Model):
                         balance_amount = line.foreign_debit
                         if balance == "credit":
                             balance_amount = line.foreign_credit
-                        tax_amount = line.tax_ids._compute_amount(
-                            float_round(
-                                balance_amount,
-                                precision_rounding=line.foreign_currency_id.rounding,
-                            ),
-                            balance_amount,
+                        # account.tax._compute_amount was removed in Odoo 18.
+                        tax_amount = sum(
+                            tax["amount"]
+                            for tax in line.tax_ids.compute_all(
+                                float_round(
+                                    balance_amount,
+                                    precision_rounding=line.foreign_currency_id.rounding,
+                                ),
+                                handle_price_include=False,
+                            )["taxes"]
                         )
                         if (
                             self.env.company.tax_calculation_rounding_method
@@ -653,7 +660,7 @@ class AccountMove(models.Model):
 
         if (
             account_payable_or_receivable_line.currency_id
-            != self.env.company.currency_foreign_id
+            != self.env.company.foreign_currency_id
         ):
             if account_payable_or_receivable_line.debit > 0:
                 account_payable_or_receivable_line.foreign_debit = sum(
@@ -970,7 +977,7 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
+        "invoice_line_ids.foreign_price",
         "invoice_line_ids.price_subtotal",
         "foreign_inverse_rate",
         "foreign_currency_id",
@@ -1052,3 +1059,107 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+
+    # -------------------------------------------------------------------------
+    # Foreign amounts of the tax lines
+    # -------------------------------------------------------------------------
+    # Odoo 17 computed the tax lines from account.move.line.compute_all_tax, where this module
+    # added the foreign balance of each tax line. Odoo 18 removed that field and computes the
+    # tax lines in _sync_tax_lines with the base lines helpers of account.tax, so the foreign
+    # balance of the tax lines is synchronized right after the tax lines are.
+
+    @contextmanager
+    def _sync_tax_lines(self, container):
+        with super()._sync_tax_lines(container):
+            yield
+        for move in container["records"]:
+            if move.state == "draft":
+                move._sync_tax_lines_foreign_balance()
+
+    def _prepare_product_foreign_base_line_for_taxes_computation(self, product_line):
+        """Base line of a product journal item expressed in the foreign currency."""
+        self.ensure_one()
+        is_invoice = self.is_invoice(include_receipts=True)
+        if is_invoice:
+            price_unit = product_line.foreign_price
+        else:
+            price_unit = product_line.amount_currency * self.foreign_inverse_rate
+        return self.env["account.tax"]._prepare_base_line_for_taxes_computation(
+            product_line,
+            price_unit=price_unit,
+            quantity=product_line.quantity if is_invoice else 1.0,
+            discount=product_line.discount if is_invoice else 0.0,
+            currency_id=self.foreign_currency_id,
+            rate=1.0,
+            sign=self.direction_sign if is_invoice else 1,
+            special_mode=False if is_invoice else "total_excluded",
+        )
+
+    @api.model
+    def _get_foreign_tax_line_key(self, values):
+        """Key matching a tax journal item with the tax amounts computed in foreign currency.
+        The currency is not part of the key since the foreign amounts use another currency."""
+
+        def ids(value):
+            if isinstance(value, models.BaseModel):
+                return frozenset(value.ids)
+            if isinstance(value, (list, tuple)) and value and isinstance(value[0], (list, tuple)):
+                return frozenset(value[0][2])
+            return frozenset(value or [])
+
+        def record_id(value):
+            return value.id if isinstance(value, models.BaseModel) else (value or False)
+
+        return (
+            record_id(values.get("tax_repartition_line_id")),
+            record_id(values.get("account_id")),
+            record_id(values.get("partner_id")),
+            record_id(values.get("group_tax_id")),
+            ids(values.get("tax_ids")),
+            ids(values.get("tax_tag_ids")),
+            json.dumps(values.get("analytic_distribution") or {}, sort_keys=True),
+        )
+
+    def _sync_tax_lines_foreign_balance(self):
+        """Set the foreign balance of the tax journal items from the taxes computed on the foreign
+        prices of the product lines."""
+        self.ensure_one()
+        tax_amls = self.line_ids.filtered("tax_repartition_line_id")
+        if not tax_amls or not self.foreign_currency_id:
+            return
+        AccountTax = self.env["account.tax"]
+        company = self.company_id
+        base_amls = self.line_ids.filtered(lambda line: line.display_type == "product")
+        base_lines = [
+            self._prepare_product_foreign_base_line_for_taxes_computation(line)
+            for line in base_amls
+        ]
+        AccountTax._add_tax_details_in_base_lines(base_lines, company)
+        AccountTax._round_base_lines_tax_details(base_lines, company)
+        AccountTax._add_accounting_data_in_base_lines_tax_details(
+            base_lines, company, include_caba_tags=self.always_tax_exigible
+        )
+        tax_results = AccountTax._prepare_tax_lines(base_lines, company)
+
+        amounts_by_key = defaultdict(float)
+        amounts_by_repartition = defaultdict(list)
+        for values in tax_results["tax_lines_to_add"]:
+            amounts_by_key[self._get_foreign_tax_line_key(values)] += values["amount_currency"]
+            amounts_by_repartition[values["tax_repartition_line_id"]].append(
+                values["amount_currency"]
+            )
+
+        for line in tax_amls:
+            tax_line = AccountTax._prepare_tax_line_repartition_grouping_key(
+                self._prepare_tax_line_for_taxes_computation(line)
+            )
+            key = self._get_foreign_tax_line_key(tax_line)
+            if key in amounts_by_key:
+                foreign_balance = amounts_by_key[key]
+            elif len(amounts_by_repartition.get(line.tax_repartition_line_id.id, [])) == 1:
+                foreign_balance = amounts_by_repartition[line.tax_repartition_line_id.id][0]
+            else:
+                foreign_balance = 0.0
+            foreign_balance = self.foreign_currency_id.round(foreign_balance)
+            if self.foreign_currency_id.compare_amounts(line.foreign_balance, foreign_balance):
+                line.foreign_balance = foreign_balance
