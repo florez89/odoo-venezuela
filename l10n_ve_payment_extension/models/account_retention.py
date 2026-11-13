@@ -476,7 +476,12 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "supplier"
-        payment_vals["journal_id"] = self.env.company.iva_supplier_retention_journal_id.id
+        journal = self.env.company.iva_supplier_retention_journal_id
+        if journal:
+            payment_vals["journal_id"] = journal.id
+        else:
+            # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+            payment_vals.pop("journal_id", None)
         in_refund_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "in_refund"
         )
@@ -523,7 +528,12 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "customer"
-        payment_vals["journal_id"] = self.env.company.iva_customer_retention_journal_id.id
+        journal = self.env.company.iva_customer_retention_journal_id
+        if journal:
+            payment_vals["journal_id"] = journal.id
+        else:
+            # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+            payment_vals.pop("journal_id", None)
         out_refund_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "out_refund"
         )
@@ -757,6 +767,9 @@ class AccountRetention(models.Model):
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )
+            if not journal_id:
+                # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+                payment_vals[-1].pop("journal_id")
 
         # payments = Payment.create(payment_vals)
         payments = self.env["account.payment"]

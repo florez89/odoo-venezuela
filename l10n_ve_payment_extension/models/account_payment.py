@@ -81,14 +81,16 @@ class AccountPayment(models.Model):
             if payment.retention_id.type_retention == "islr":
                 move_name += f"-{payment.retention_line_ids[0].payment_concept_id.name[:5]}"
 
-            vals_to_change = {"name": move_name}
-            move.write(vals_to_change)
-            move.line_ids.write(vals_to_change)
+            # Separate dicts: account.move.write adds move-only keys to the dict it receives.
+            move.write({"name": move_name})
+            move.line_ids.write({"name": move_name})
         return res
 
     def unlink(self):
         for payment in self:
-            if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids):
+            if not payment.retention_line_ids:
+                continue
+            if any(isinstance(id, models.NewId) for id in payment.retention_line_ids.ids):
                 payment.retention_line_ids = False
             else:
                 payment.retention_line_ids = Command.clear()
