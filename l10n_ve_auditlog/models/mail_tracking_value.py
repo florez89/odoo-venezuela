@@ -10,6 +10,9 @@ class MailTrackingValue(models.Model):
         "res.partner", compute="_compute_author", string="Author", store=True
     )
 
+    # Odoo 17 replaced the 'field' and 'field_type' columns by field_id.
+    field_type = fields.Selection(related="field_id.ttype", string="Field Type")
+
     @api.depends("mail_message_id")
     def _compute_model(self):
         for record in self:
