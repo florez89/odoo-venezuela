@@ -36,13 +36,16 @@ class ResCurrencyRate(models.Model):
             (foreign_currency_id).
         raise_if_not_found : bool
             Whether the absence of a rate should raise UserError instead of
-            returning {}. Defaults to True: every search that finds no rate for
-            rate_date must stop with "no rate assigned". Pass False only from
+            returning {}. Defaults to True: a search that finds no rate in force
+            on rate_date must stop with "no rate assigned". Pass False only from
             a call site that can deliberately work without a rate.
 
-        La tasa se busca SOLO para la fecha exacta `rate_date`: no se usa la más
-        cercana, ni la anterior, ni la posterior. Si la moneda no tiene un registro
-        con esa fecha, se considera "no encontrada".
+        Se usa la tasa vigente en `rate_date`: la más reciente con fecha menor o
+        igual (como `res.currency._get_rates` de Odoo), así fines de semana y
+        feriados usan la última publicada. Una tasa posterior nunca se usa. Si la
+        moneda no tiene ninguna tasa hasta esa fecha se considera "no encontrada".
+        La antigüedad de la tasa la controla cada documento con `rate_date` del
+        resultado y `res.company.rate_max_age_days`.
 
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
         sucursales nativas). Se busca primero en la compañía activa y, si no hay
@@ -53,13 +56,14 @@ class ResCurrencyRate(models.Model):
         ------
         UserError
             If raise_if_not_found is True (default) and the currency has no rate dated
-            exactly rate_date in the company hierarchy.
+            on or before rate_date in the company hierarchy.
 
         Returns
         -------
         dict
             A dictionary with the rate and inverse rate for the given currency and
-            date, or {} if no rate was found and raise_if_not_found is False.
+            date plus `rate_date`, the date of the rate used, or {} if no rate was
+            found and raise_if_not_found is False.
             The company currency without a recorded rate resolves to 1.0 / 1.0 (its rate
             against itself). {} is returned only when no foreign currency is given at
             all (there is no currency to look up).
@@ -87,8 +91,9 @@ class ResCurrencyRate(models.Model):
                 [
                     ("currency_id", "=", foreign_currency_id),
                     ("company_id", "=", company_id),
-                    ("name", "=", rate_date),
+                    ("name", "<=", rate_date),
                 ],
+                order="name desc",
                 limit=1,
             )
             if rate:
@@ -114,11 +119,13 @@ class ResCurrencyRate(models.Model):
             return {
                 "foreign_rate": rate.company_rate,
                 "foreign_inverse_rate": rate.company_rate,
+                "rate_date": rate.name,
             }
         else:
             return {
                 "foreign_rate": rate.inverse_company_rate,
                 "foreign_inverse_rate": rate.company_rate,
+                "rate_date": rate.name,
             }
 
     @api.model

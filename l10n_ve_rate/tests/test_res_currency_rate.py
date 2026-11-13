@@ -44,19 +44,46 @@ class TestComputeRateFallback(TransactionCase):
         """Evidencia: Odoo 19 (`CHECK (rate>0)`) impide guardar una tasa en 0,
         asi que una tasa existente nunca produce un asiento con tasa 0,00; la
         unica falla posible es la ausencia del registro (ver
-        test_compute_rate_raises_when_no_rate_for_exact_date).
+        test_compute_rate_raises_when_only_later_rates_exist).
         """
         with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"), self.env.cr.savepoint():
             self._create_rate(date(2023, 6, 1), 0.0)
 
-    def test_compute_rate_raises_when_no_rate_for_exact_date(self):
-        """No se usa la tasa más cercana: ni la anterior ni la posterior."""
-        self._create_rate(date(2023, 1, 1), 40.0)
+    def test_compute_rate_uses_latest_rate_before_the_date(self):
+        """Sin tasa ese dia se usa la vigente: la mas reciente anterior (como Odoo)."""
+        jan = self._create_rate(date(2023, 1, 1), 40.0)
+        dec = self._create_rate(date(2023, 12, 1), 50.0)
+
+        for day, rate in ((date(2023, 6, 1), jan), (date(2030, 1, 1), dec)):
+            with self.subTest(day=day):
+                result = self.Rate.compute_rate(self.foreign_currency.id, day)
+                self.assertEqual(result["foreign_rate"], rate.inverse_company_rate)
+                self.assertEqual(result["foreign_inverse_rate"], rate.company_rate)
+                self.assertEqual(result["rate_date"], rate.name)
+
+    def test_compute_rate_returns_the_date_of_the_rate_used(self):
+        exact = self._create_rate(date(2023, 6, 1), 45.0)
+        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
+        self.assertEqual(result["rate_date"], exact.name)
+
+    def test_compute_rate_raises_when_only_later_rates_exist(self):
+        """A rate published after the date is never used."""
         self._create_rate(date(2023, 12, 1), 50.0)
 
-        for day in (date(2020, 1, 1), date(2023, 6, 1), date(2030, 1, 1)):
-            with self.subTest(day=day), self.assertRaisesRegex(UserError, "no rate assigned"):
-                self.Rate.compute_rate(self.foreign_currency.id, day)
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
+
+    def test_rate_max_age_days_defaults_to_two(self):
+        self.assertEqual(self.env["res.company"].new({}).rate_max_age_days, 2)
+
+    def test_rate_max_age_days_is_editable_from_settings(self):
+        settings = self.env["res.config.settings"].create({"rate_max_age_days": 5})
+        settings.execute()
+        self.assertEqual(self.company.rate_max_age_days, 5)
+
+    def test_rate_max_age_days_cannot_be_negative(self):
+        with self.assertRaises(ValidationError):
+            self.company.rate_max_age_days = -1
 
     def test_compute_rate_returns_empty_when_raise_is_disabled(self):
         """raise_if_not_found=False keeps the silent behaviour: {} (sin ninguna tasa)."""
@@ -158,13 +185,23 @@ class TestRateBranchInheritance(TransactionCase):
 
         self.assertEqual(result["foreign_rate"], exact.inverse_company_rate)
 
-    def test_branch_raises_when_parent_has_no_rate_for_exact_date(self):
-        """Sin tasa de la matriz para esa fecha exacta la sucursal también falla."""
+    def test_branch_uses_latest_parent_rate_before_the_date(self):
+        """Sin tasa de la matriz ese dia la sucursal usa la vigente de la matriz."""
+        previous = self._create_rate(self.parent, date(2023, 6, 1), 0.025)
+
+        result = self.Rate.with_company(self.branch).compute_rate(
+            self.usd.id, date(2023, 6, 2),
+        )
+
+        self.assertEqual(result["foreign_rate"], previous.inverse_company_rate)
+        self.assertEqual(result["rate_date"], previous.name)
+
+    def test_branch_raises_when_parent_only_has_later_rates(self):
         self._create_rate(self.parent, date(2023, 6, 1), 0.025)
 
         with self.assertRaisesRegex(UserError, "no rate assigned"):
             self.Rate.with_company(self.branch).compute_rate(
-                self.usd.id, date(2023, 6, 2),
+                self.usd.id, date(2023, 5, 31),
             )
 
     def test_branch_does_not_use_unrelated_company_rates(self):
