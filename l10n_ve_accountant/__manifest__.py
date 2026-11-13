@@ -8,7 +8,7 @@
     "maintainers": ["florez89"],
     "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.43",
+    "version": "19.0.1.0.44",
     "depends": [
         "base",
         "web",

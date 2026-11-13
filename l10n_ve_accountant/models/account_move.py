@@ -211,6 +211,48 @@ class AccountMove(models.Model):
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
 
+    foreign_rate_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_rate",
+        store=True,
+        copy=False,
+        help="Date of the exchange rate in force used by this document: the "
+        "latest rate dated on or before its rate date.",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+        help="The rate is older than the company's maximum rate age: posting "
+        "the document from the form asks for confirmation.",
+    )
+
+    def _get_foreign_rate_reference_date(self):
+        """Date whose rate the document uses: the accounting date for entries
+        (their invoice_date is just the default "today") and the "Rate Date"
+        (invoice_date) for every invoice, falling back to the accounting date."""
+        self.ensure_one()
+        if self.move_type == "entry":
+            rate_date = self.date
+        else:
+            rate_date = self.invoice_date or self.date
+        return rate_date or fields.Date.context_today(self)
+
+    @api.depends("foreign_rate_date", "invoice_date", "date", "move_type", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        for move in self:
+            age = 0
+            if move.foreign_rate_date:
+                age = (move._get_foreign_rate_reference_date() - move.foreign_rate_date).days
+            limit = move.company_id.rate_max_age_days
+            move.foreign_rate_age_days = age
+            move.is_foreign_rate_outdated = bool(
+                limit and age > limit and move.is_invoice(include_receipts=True)
+            )
+
     can_edit_tax_totals = fields.Boolean(
         compute="_compute_can_edit_tax_totals",
         help="Gates the pencil-edit on the tax_totals widget -- same "
@@ -790,6 +832,8 @@ class AccountMove(models.Model):
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+                # it keeps the rate of the invoice it reverses on purpose
+                move.foreign_rate_date = False
             Rate = self.env["res.currency.rate"]
             # La tasa de un asiento (entry) es la de su fecha contable (`date`), como en
             # _compute_rate_for_documents; invoice_date no es su fecha de tasa y trae el "hoy"
@@ -1189,18 +1233,17 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                # a rate typed by the user has no publication date to age
+                move.foreign_rate_date = False
                 continue
-            # "Rate Date" (invoice_date) drives the rate for every invoice,
-            # purchases included. An entry's invoice_date is just the default
-            # "today", so entries use the accounting date.
-            if move.move_type == "entry":
-                rate_date = move.date
-            else:
-                rate_date = move.invoice_date or move.date
-            rate_date = rate_date or fields.Date.context_today(move)
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id,
+                move._get_foreign_rate_reference_date(),
+                with_rate_date=True,
+            )
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate_date = rate_values.get("rate_date", False)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -1473,8 +1516,13 @@ class AccountMove(models.Model):
 
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
+            # `l10n_ve_check_rate_age` comes from the form's Confirm button only:
+            # code posting documents (automatic flows) is never stopped.
+            check_rate_age = self.env.context.get("l10n_ve_check_rate_age")
             for move in self:
-                if move.move_type in ("out_invoice", "out_refund"):
+                if move.move_type in ("out_invoice", "out_refund") or (
+                    check_rate_age and move.is_foreign_rate_outdated
+                ):
                     return {
                         'name': _('Alert'),
                         'type': 'ir.actions.act_window',
@@ -1503,6 +1551,27 @@ class AccountMove(models.Model):
                         )
                     )
         return super().action_post()
+
+    def _post(self, soft=True):
+        outdated = {
+            move: (move.foreign_rate_date, move.foreign_rate_age_days)
+            for move in self
+            if move.is_foreign_rate_outdated
+        }
+        posted = super()._post(soft=soft)
+        for move in posted:
+            if move not in outdated:
+                continue
+            rate_date, age = outdated[move]
+            move.message_post(
+                body=_(
+                    "Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days old.",
+                    user=self.env.user.name,
+                    rate_date=format_date(self.env, rate_date),
+                    age=age,
+                )
+            )
+        return posted
 
     @api.depends(
         "invoice_line_ids",

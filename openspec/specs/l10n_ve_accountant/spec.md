@@ -51,8 +51,13 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 #### Scenario: Documento con fecha sin tasa cargada
 
-- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
-- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>" y, una vez cargada la tasa de esa fecha, el mismo documento se contabiliza con ella
+- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna pero sí tasas anteriores
+- **THEN** usa la tasa vigente (la más reciente anterior) y guarda su fecha en `foreign_rate_date`; ver «Aviso de tasa desactualizada»
+
+#### Scenario: Documento sin ninguna tasa hasta su fecha
+
+- **WHEN** se crea o contabiliza un documento y la moneda alterna no tiene ninguna tasa hasta su fecha de tasa
+- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>"
 
 #### Scenario: Cambio de la tasa después de contabilizar
 
@@ -522,9 +527,34 @@ El formulario de líneas DEBE (MUST) rechazar cantidades negativas (`_onchange_q
 - **WHEN** un usuario introduce una cantidad negativa en una línea
 - **THEN** se lanza un error de validación al salir del campo
 
+### Requirement: Aviso de tasa desactualizada
+
+Cada `account.move` DEBE (MUST) guardar en `foreign_rate_date` la fecha de la tasa usada (vacía si la tasa es manual, si es una nota de crédito que hereda la tasa del documento reversado o si el documento es anterior a esta función) y calcular `foreign_rate_age_days`, los días entre su fecha de tasa y `foreign_rate_date`. Una factura (`is_invoice(include_receipts=True)`) con antigüedad mayor a `res.company.rate_max_age_days` (distinto de 0) tiene `is_foreign_rate_outdated`. No se bloquea:
+
+- El borrador muestra una franja de aviso con la fecha y los días de la tasa.
+- El botón Confirmar del formulario envía `l10n_ve_check_rate_age` y `action_post` abre `move.action.post.alert.wizard` con el aviso; al aceptar se contabiliza.
+- El código que contabiliza documentos sin esa clave (flujos automáticos) no se detiene.
+- Toda factura contabilizada con tasa desactualizada deja en el chatter: "Posted by <usuario> with the exchange rate of <fecha>, <días> days old."
+- La columna `foreign_rate_date` se crea antes que el ORM (pre_init_hook y migración 19.0.1.0.44) para no recalcular las tasas de los asientos existentes.
+
+#### Scenario: Tasa dentro del límite
+
+- **WHEN** la tasa del documento tiene `rate_max_age_days` días o menos
+- **THEN** no hay aviso ni nota en el chatter
+
+#### Scenario: Confirmar desde el formulario con tasa desactualizada
+
+- **WHEN** el usuario pulsa Confirmar en una factura cuya tasa supera el límite
+- **THEN** se abre el wizard con el aviso, la factura sigue en borrador hasta aceptar y al aceptar queda la nota en el chatter
+
+#### Scenario: Contabilización automática con tasa desactualizada
+
+- **WHEN** un proceso contabiliza por código una factura cuya tasa supera el límite
+- **THEN** se contabiliza sin pedir confirmación y queda la nota en el chatter
+
 ### Requirement: Confirmación de facturas de venta con alerta previa
 
-`action_post` de `account.move` DEBE (MUST) interceptar la confirmación cuando falta la clave de contexto `move_action_post_alert` y el recordset contiene algún documento `out_invoice`/`out_refund`, devolviendo la acción del wizard `move.action.post.alert.wizard` con `default_move_id` del primer documento de venta encontrado y abortando la publicación de todo el recordset; la publicación solo procede cuando el usuario confirma en el wizard (que reinvoca `action_post` con la clave en contexto).
+`action_post` de `account.move` DEBE (MUST) interceptar la confirmación cuando falta la clave de contexto `move_action_post_alert` y el recordset contiene algún documento `out_invoice`/`out_refund` (o, con `l10n_ve_check_rate_age`, alguna factura con tasa desactualizada), devolviendo la acción del wizard `move.action.post.alert.wizard` con `default_move_id` del primer documento de venta encontrado y abortando la publicación de todo el recordset; la publicación solo procede cuando el usuario confirma en el wizard (que reinvoca `action_post` con la clave en contexto).
 
 #### Scenario: Confirmación directa
 

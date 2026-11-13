@@ -3,6 +3,7 @@ from . import wizard
 from . import report
 
 from odoo import SUPERUSER_ID, api
+from odoo.tools import sql
 old_module = "binaural_accountant"
 new_module = "l10n_ve_accountant"
 
@@ -10,6 +11,19 @@ def pre_init_hook(env):
     reassign_account_data_ids(env.cr)
     reassign_tax_unit_data_ids(env.cr)
     retire_module_binaural_igtf_column(env.cr)
+    add_foreign_rate_date_column(env.cr)
+
+
+def add_foreign_rate_date_column(cr):
+    """Create account_move.foreign_rate_date before the ORM does.
+
+    The field shares `_compute_rate` with foreign_rate/foreign_inverse_rate:
+    if the ORM created the column it would recompute the three fields on every
+    existing move and overwrite the rates already posted. Existing moves keep
+    an empty date, so they never show the outdated rate warning.
+    """
+    if sql.table_exists(cr, "account_move") and not sql.column_exists(cr, "account_move", "foreign_rate_date"):
+        sql.create_column(cr, "account_move", "foreign_rate_date", "date")
 
 
 def retire_module_binaural_igtf_column(cr):
