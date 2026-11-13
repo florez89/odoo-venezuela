@@ -20,7 +20,7 @@ class TestStockPickingInvoice(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_vef.id,
-                "currency_foreign_id": self.currency_usd.id,
+                "foreign_currency_id": self.currency_usd.id,
             }
         )
 
