@@ -5,6 +5,25 @@ from odoo.tests import TransactionCase, tagged
 @tagged("post_install", "-at_install", "l10n_ve_accountant_payment_zero")
 class TestPaymentZeroAmount(TransactionCase):
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Bank payments need an outstanding account (enforced by
+        # account.payment.action_post); configure it like a user would.
+        company = cls.env.company
+        chart = cls.env["account.chart.template"].with_company(company)
+        outstanding_in = chart.ref("account_journal_payment_debit_account_id", raise_if_not_found=False)
+        outstanding_out = chart.ref("account_journal_payment_credit_account_id", raise_if_not_found=False)
+        for journal in cls.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", company.id)]
+        ):
+            journal.inbound_payment_method_line_ids.filtered(
+                lambda line: not line.payment_account_id
+            ).payment_account_id = outstanding_in or journal.default_account_id
+            journal.outbound_payment_method_line_ids.filtered(
+                lambda line: not line.payment_account_id
+            ).payment_account_id = outstanding_out or journal.default_account_id
+
     def _create_payment(self, amount):
         partner = self.env["res.partner"].create({"name": "Partner Zero Amount"})
         journal = self.env["account.journal"].search(
