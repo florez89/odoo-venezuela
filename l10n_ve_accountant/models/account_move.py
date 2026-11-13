@@ -9,7 +9,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare
 from odoo.tools.sql import drop_index, index_exists
 from odoo.tools.float_utils import float_round
-from odoo.tools.misc import formatLang
+from odoo.tools.misc import formatLang, format_date
 
 _logger = logging.getLogger(__name__)
 
@@ -59,6 +59,45 @@ class AccountMove(models.Model):
 
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
+
+    foreign_rate_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_rate",
+        store=True,
+        copy=False,
+        help="Date of the exchange rate in force used by this document: the "
+        "latest rate dated on or before its rate date.",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+        help="The rate is older than the company's maximum rate age: posting "
+        "the document from the form asks for confirmation.",
+    )
+
+    def _get_foreign_rate_reference_date(self):
+        """Date whose rate the document uses (same rule as _compute_rate): the
+        invoice date for sale documents and the accounting date for every other
+        move, today when it is empty."""
+        self.ensure_one()
+        date_field = "invoice_date" if self.is_sale_document(include_receipts=True) else "date"
+        return self[date_field] or fields.Date.today()
+
+    @api.depends("foreign_rate_date", "invoice_date", "date", "move_type", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        for move in self:
+            age = 0
+            if move.foreign_rate_date:
+                age = (move._get_foreign_rate_reference_date() - move.foreign_rate_date).days
+            limit = move.company_id.rate_max_age_days
+            move.foreign_rate_age_days = age
+            move.is_foreign_rate_outdated = bool(
+                limit and age > limit and move.is_invoice(include_receipts=True)
+            )
 
     vat = fields.Char(
         string="VAT",
@@ -362,6 +401,8 @@ class AccountMove(models.Model):
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+                # it keeps the rate of the invoice it reverses on purpose
+                move.foreign_rate_date = False
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -732,12 +773,17 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                # a rate typed by the user has no publication date to age
+                move.foreign_rate_date = False
                 continue
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id, rate_date, with_rate_date=True
+            )
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate_date = rate_values.get("rate_date", False)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -945,8 +991,13 @@ class AccountMove(models.Model):
 
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
+            # `l10n_ve_check_rate_age` comes from the form's Confirm button only:
+            # code posting documents (automatic flows) is never stopped.
+            check_rate_age = self.env.context.get("l10n_ve_check_rate_age")
             for move in self:
-                if move.move_type in ("out_invoice", "out_refund"):
+                if move.move_type in ("out_invoice", "out_refund") or (
+                    check_rate_age and move.is_foreign_rate_outdated
+                ):
                     return {
                         'name': _('Alert'),
                         'type': 'ir.actions.act_window',
@@ -975,6 +1026,27 @@ class AccountMove(models.Model):
                         )
                     )
         return super().action_post()
+
+    def _post(self, soft=True):
+        outdated = {
+            move: (move.foreign_rate_date, move.foreign_rate_age_days)
+            for move in self
+            if move.is_foreign_rate_outdated
+        }
+        posted = super()._post(soft=soft)
+        for move in posted:
+            if move not in outdated:
+                continue
+            rate_date, age = outdated[move]
+            move.message_post(
+                body=_(
+                    "Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days old.",
+                    user=self.env.user.name,
+                    rate_date=format_date(self.env, rate_date),
+                    age=age,
+                )
+            )
+        return posted
 
     @api.depends(
         "invoice_line_ids.foreign_price",

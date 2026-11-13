@@ -1271,3 +1271,81 @@ msgstr "Notas de Crédito"
 #: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
 msgid "Collections"
 msgstr "Cobranzas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate_date
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_rate_date
+#: model:ir.model.fields,help:l10n_ve_accountant.field_move_action_post_alert_wizard__foreign_rate_date
+msgid ""
+"Date of the exchange rate in force used by this document: the latest rate "
+"dated on or before its rate date."
+msgstr ""
+"Fecha de la tasa de cambio vigente usada por este documento: la tasa "
+"más reciente con fecha igual o anterior a su fecha de tasa."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_foreign_rate_outdated
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_foreign_rate_outdated
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__is_foreign_rate_outdated
+msgid "Outdated Rate"
+msgstr "Tasa desactualizada"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days "
+"old."
+msgstr ""
+"Publicado por %(user)s con la tasa de cambio del %(rate_date)s, de "
+"%(age)s días de antigüedad."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate_age_days
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_rate_age_days
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__foreign_rate_age_days
+msgid "Rate Age (Days)"
+msgstr "Antigüedad de la tasa (días)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_rate_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__foreign_rate_date
+msgid "Rate Used Date"
+msgstr "Fecha de la tasa usada"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid "The exchange rate of this document is from"
+msgstr "La tasa de cambio de este documento es del"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__is_foreign_rate_outdated
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__is_foreign_rate_outdated
+#: model:ir.model.fields,help:l10n_ve_accountant.field_move_action_post_alert_wizard__is_foreign_rate_outdated
+msgid ""
+"The rate is older than the company's maximum rate age: posting the document "
+"from the form asks for confirmation."
+msgstr ""
+"La tasa supera la antigüedad máxima de la compañía: publicar el "
+"documento desde el formulario pide confirmación."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid ""
+"days old. Check that it is the rate in force\n"
+"                    before continuing: the confirmation is recorded in the document history."
+msgstr ""
+"días de antigüedad. Verifique que sea la tasa vigente\n                 "
+"   antes de continuar: la confirmación queda registrada en el "
+"historial del documento."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid ""
+"days old. Update the exchange rates\n"
+"                    or confirm that it is the rate in force when posting."
+msgstr ""
+"días de antigüedad. Actualice las tasas de cambio\n                    "
+"o confirme que es la tasa vigente al publicar."
