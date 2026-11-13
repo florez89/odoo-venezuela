@@ -409,7 +409,7 @@ class PosSession(models.Model):
     #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
     #         payment_method, amounts, diff_amount
     #     )
-    #     account_payment = res.move_id.payment_id
+    #     account_payment = res.move_id.origin_payment_id
     #     account_payment.write(
     #         {
     #             "foreign_rate": self.config_id.foreign_rate,
@@ -433,7 +433,7 @@ class PosSession(models.Model):
         res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
             payment, amounts
         )
-        account_payment = res.move_id.payment_id
+        account_payment = res.move_id.origin_payment_id
 
         account_payment.write(
             {
@@ -460,7 +460,7 @@ class PosSession(models.Model):
     #         {
     #             "name": _("PoS Payment Method Adjustment"),
     #             "date": move.move_id.create_date,
-    #             "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
+    #             "journal_id": move.move_id.origin_payment_id.pos_payment_method_id.cross_account_journal.id,
     #             "state": "draft",
     #             "line_ids": self._line_vals_move_cross_payment_incoming(move),
     #             "foreign_currency_id": move.move_id.foreign_currency_id.id,
@@ -483,10 +483,10 @@ class PosSession(models.Model):
     #     credit_account = 0
     #     debit_account = 0
     #     move_lines = []
-    #     for account in move.move_id.payment_id.pos_payment_method_id:
+    #     for account in move.move_id.origin_payment_id.pos_payment_method_id:
     #         debit_account = account.outstanding_account_id.id
 
-    #     for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
+    #     for account_method in move.move_id.origin_payment_id.pos_payment_method_id.cross_journal:
     #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
     #         currency = (
     #             account_method.currency_id.id
@@ -508,7 +508,7 @@ class PosSession(models.Model):
     #                         "debit": abs(move.credit),
     #                         "foreign_debit": abs(move.foreign_credit),
     #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
+    #                         "foreign_rate": move.move_id.origin_payment_id.foreign_rate,
     #                         "currency_id": account_method.currency_id.id
     #                         if account_method.currency_id
     #                         else self.env.company.currency_id.id,
@@ -526,7 +526,7 @@ class PosSession(models.Model):
     #                         "credit": abs(move.credit),
     #                         "foreign_credit": abs(move.foreign_credit),
     #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
+    #                         "foreign_rate": move.move_id.origin_payment_id.foreign_rate,
     #                         "currency_id": self.env.company.currency_id.id,
     #                     }
     #                 ),

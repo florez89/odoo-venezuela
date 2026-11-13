@@ -322,18 +322,19 @@ class AccountMoveInh(models.Model):
     def print_out_refund(self, values):
         self.write({"mf_invoice_number": values["sequence"], "mf_serial": values["serial_machine"]})
 
-    def _get_reconciled_info_JSON_values(self):
-        res = super()._get_reconciled_info_JSON_values()
-        reconciled_vals = []
-        for payment in res:
-            payment_id = self.env["account.payment"].search(
-                [("id", "=", payment["account_payment_id"])]
-            )
-            payment["mf_payment_method"] = payment_id.journal_id.payment_method
-            reconciled_vals.append(payment)
-        return reconciled_vals
+    def _compute_payments_widget_reconciled_info(self):
+        # _get_reconciled_info_JSON_values was removed in Odoo 18: the reconciled payments
+        # are built by this compute method.
+        res = super()._compute_payments_widget_reconciled_info()
+        for move in self:
+            widget = move.invoice_payments_widget
+            if not widget:
+                continue
+            for payment in widget.get("content", []):
+                payment_id = self.env["account.payment"].browse(payment.get("account_payment_id"))
+                payment["mf_payment_method"] = payment_id.journal_id.payment_method
+        return res
 
-        
     def check_print_debit_note(self):
         """
         Print debit note in fiscal machine

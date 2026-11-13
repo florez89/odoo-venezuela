@@ -1,7 +1,8 @@
 
 <odoo>
     <data>
-        <template id="report_saledetails" inherit_id="point_of_sale.report_saledetails">
+        <!-- Odoo 18 moved the page of the sale details report to pos_session_sales_details -->
+        <template id="report_saledetails" inherit_id="point_of_sale.pos_session_sales_details">
             <xpath expr="//div[@class='page']" position="replace">
                 <div class="page">
                     <div class="text-center">
@@ -87,12 +88,6 @@
                         </tbody>
                     </table>
                 </div>
-            </xpath>
-            <xpath expr="//div[@t-if='opening_note or closing_note']" position="replace">
-            </xpath>
-            <xpath expr="//t[@id='closing_session']" position="replace">
-            </xpath>
-            <xpath expr="//t[@id='invoices']" position='replace'>
             </xpath>
         </template>
     </data>
