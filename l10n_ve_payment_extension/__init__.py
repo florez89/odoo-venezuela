@@ -1,3 +1,5 @@
+from odoo.tools import sql
+
 from . import controllers
 from . import models
 from . import wizard
@@ -15,6 +17,21 @@ def pre_init_hook(env):
     reassign_xml_tax_unit_data_ids(env.cr)
     reassign_xml_ir_rule_ids(env.cr)
     retire_binaural_payment_extension(env.cr)
+    date_existing_tax_units(env.cr)
+
+
+def date_existing_tax_units(cr):
+    """Give a historic `available_date` to tax units created before this
+    module adds the field (the l10n_ve_accountant placeholder unit).
+
+    Without it Odoo fills the new required column with the field default
+    (today), so the real unit published on the installation day collides
+    with the placeholder ("There cannot be two tax units with the same date").
+    """
+    if not sql.table_exists(cr, "tax_unit"):
+        return
+    cr.execute("ALTER TABLE tax_unit ADD COLUMN IF NOT EXISTS available_date date")
+    cr.execute("UPDATE tax_unit SET available_date = '2000-01-01' WHERE available_date IS NULL")
 
 
 def retire_binaural_payment_extension(cr):
