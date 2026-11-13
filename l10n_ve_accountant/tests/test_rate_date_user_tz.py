@@ -1,6 +1,5 @@
 from datetime import date
 
-from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, freeze_time, tagged
 
 
@@ -57,13 +56,23 @@ class TestRateDateUserTz(TransactionCase):
 
     @freeze_time("2026-10-27 01:00:00")
     def test_explicit_document_date_is_not_shifted(self):
-        """Una fecha de documento explícita no se corrige: el 27 sigue buscando la tasa del 27."""
-        with self.assertRaisesRegex(UserError, "There is no rate assigned"):
-            self.env["account.move"].create(
-                {
-                    "move_type": "out_invoice",
-                    "partner_id": self.partner.id,
-                    "invoice_date": date(2026, 10, 27),
-                    "invoice_line_ids": [(0, 0, {"product_id": self.product.id, "price_unit": 100.0})],
-                }
-            )
+        """Una fecha de documento explícita no se corrige: el 27 usa la tasa del 27, no la del 26 local."""
+        self.env["res.currency.rate"].create(
+            {
+                "name": date(2026, 10, 27),
+                "currency_id": self.usd.id,
+                "company_id": self.company.id,
+                "company_rate": 1.0 / 41.0,
+                "inverse_company_rate": 41.0,
+            }
+        )
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "invoice_date": date(2026, 10, 27),
+                "invoice_line_ids": [(0, 0, {"product_id": self.product.id, "price_unit": 100.0})],
+            }
+        )
+        self.assertAlmostEqual(invoice.foreign_rate, 41.0)
+        self.assertEqual(invoice.foreign_rate_date, date(2026, 10, 27))

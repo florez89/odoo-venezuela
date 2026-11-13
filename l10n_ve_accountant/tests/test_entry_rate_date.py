@@ -32,13 +32,11 @@ class TestEntryRateDate(TzBoundaryMixin, TransactionCase):
             )
             self.assertAlmostEqual(move.foreign_rate, USD_PER_VEF_INVERSE, places=4)
 
-    def test_entry_date_without_rate_still_raises(self):
-        """La fecha explicita del asiento no se corrige: sin tasa en `date` se bloquea."""
-        from odoo.exceptions import UserError
-
-        with freeze_time("2026-03-10 15:00:00"), self.assertRaisesRegex(
-            UserError, "There is no rate assigned"
-        ):
-            self.env["account.move"].create(
+    def test_entry_date_without_rate_uses_the_rate_in_force(self):
+        """Sin tasa en `date` el asiento usa la vigente: la mas reciente hasta esa fecha."""
+        with freeze_time("2026-03-10 15:00:00"):
+            move = self.env["account.move"].create(
                 {"move_type": "entry", "journal_id": self.journal.id, "date": date(2026, 3, 12)}
             )
+        self.assertAlmostEqual(move.foreign_rate, USD_PER_VEF_INVERSE, places=4)
+        self.assertEqual(move.foreign_rate_date, CARACAS_DAY)

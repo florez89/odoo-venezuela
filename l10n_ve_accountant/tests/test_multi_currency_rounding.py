@@ -2721,12 +2721,10 @@ class TestMultiCurrencyRounding(TransactionCase):
                 f"(debit={td}, credit={tc}, diff={td - tc})",
         )
 
-    def test_48_post_vendor_bill_without_exact_date_rate_raises(self):
-        """La tasa se toma SOLO de la fecha exacta del documento: si para
-        `invoice_date` no hay tasa cargada (aunque exista una anterior o una
-        posterior) no se puede contabilizar y se avisa que falta la tasa.
-        Una vez cargada la tasa de ese dia, el mismo documento se contabiliza
-        con ella.
+    def test_48_post_vendor_bill_without_exact_date_rate_uses_the_rate_in_force(self):
+        """Sin tasa cargada para `invoice_date` se usa la vigente: la mas
+        reciente anterior, nunca una posterior. Una vez cargada la tasa de ese
+        dia, el mismo documento se contabiliza con ella.
         """
         self.company.tax_calculation_rounding_method = 'round_per_line'
         self.env["res.currency.rate"].search([
@@ -2756,11 +2754,13 @@ class TestMultiCurrencyRounding(TransactionCase):
             "inverse_company_rate": 191.3862,
             "company_id": self.company.id,
         })
-        with self.assertRaisesRegex(UserError, "no rate assigned"):
-            self._create_dated_invoice(
-                self.currency_usd, invoice_date, accounting_date, lines,
-                move_type='in_invoice',
-            )
+        inv = self._create_dated_invoice(
+            self.currency_usd, invoice_date, accounting_date, lines,
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        self.assertEqual(inv.foreign_rate_date, invoice_date - timedelta(days=5))
+        self.assertAlmostEqual(inv.invoice_currency_rate, 1 / 170.1122, places=6)
 
         # Llega la tasa BCV real de invoice_date: ahora si se contabiliza
         # con ella y el asiento cuadra.
