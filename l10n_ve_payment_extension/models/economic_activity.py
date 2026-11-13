@@ -28,9 +28,13 @@ class EconomicActivity(models.Model):
     minimum_monthly = fields.Float(string="Monthly Taxable Minimum", required=True)
     minimum_annual = fields.Float(string="Annual Taxable Minimum", required=True)
 
-    def name_get(self):
-        res = []
+    @api.depends("name", "branch_id.name", "municipality_id.name")
+    def _compute_display_name(self):
+        # name_get is no longer used since Odoo 17.
         for activity in self:
-            res.append((activity.id, activity.name + " - " + activity.branch_id.name + " - " + activity.municipality_id.name))
-        return res
+            activity.display_name = " - ".join(
+                name
+                for name in (activity.name, activity.branch_id.name, activity.municipality_id.name)
+                if name
+            )
 

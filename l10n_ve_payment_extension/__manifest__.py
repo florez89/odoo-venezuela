@@ -8,6 +8,7 @@
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
     "version": "18.0.1.0.0",
+    "external_dependencies": {"python": ["pandas", "xlsxwriter"]},
     "depends": [
         "base",
         "account",
