@@ -102,7 +102,7 @@ class AccountMoveRetention(models.Model):
 
     count_islr_retention = fields.Integer('count islr retention',compute="compute_count_retentions")
     count_iva_retention = fields.Integer('count iva retention',compute="compute_count_retentions")
-    count_municipal_retention = fields.Integer('count iva retention', compute="compute_count_retentions")
+    count_municipal_retention = fields.Integer("Municipal Retention Count", compute="compute_count_retentions")
 
     has_emited_islr_retention = fields.Boolean('has emited islr_retention', compute="compute_count_retentions")
     has_emited_municipal_retention = fields.Boolean('has emited municipal retention', compute="compute_count_retentions")

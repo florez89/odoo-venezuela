@@ -53,7 +53,7 @@ class ProductTemplate(models.Model):
     )
 
     priority_location = fields.Integer(
-        string="Priority", related="physical_location_id.priority", store=True
+        string="Location Priority", related="physical_location_id.priority", store=True
     )
 
     def _compute_show_physical_locations(self):

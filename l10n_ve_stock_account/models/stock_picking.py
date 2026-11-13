@@ -34,7 +34,7 @@ DRIVER_LICENSE_TYPES = [
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
-    invoice_count = fields.Integer(string="Invoices", compute="_compute_invoice_count")
+    invoice_count = fields.Integer(string="Invoice Count", compute="_compute_invoice_count")
     invoice_ids = fields.Many2many(
         comodel_name="account.move",
         string="Invoices",
@@ -42,7 +42,7 @@ class StockPicking(models.Model):
         search="_search_invoice_ids",
         copy=False,
     )
-    operation_code = fields.Selection(related="picking_type_id.code")
+    operation_code = fields.Selection(string="Operation Code", related="picking_type_id.code")
 
     is_return = fields.Boolean()
 

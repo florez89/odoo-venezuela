@@ -5,7 +5,7 @@ class StockPickingAlterLocationLine(models.Model):
     _name = "stock.picking.alter.location.line"
     _description = "Alternate Location Line"
 
-    name = fields.Char(related="location_id.display_name")
+    name = fields.Char(string="Location Name", related="location_id.display_name")
     location_id = fields.Many2one("stock.location", string="Product Location")
     stock_alter_location_id = fields.Many2one("stock.picking.alter.location")
     available_qty = fields.Float("Available Quantities")

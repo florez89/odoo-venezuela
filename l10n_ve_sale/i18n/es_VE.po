@@ -324,11 +324,6 @@ msgid "In payment process"
 msgstr "En proceso de pago"
 
 #. module: l10n_ve_sale
-#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__invoiced
-msgid "Invoiced"
-msgstr ""
-
-#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__last_foreign_rate
 msgid "Last Foreign Rate"
 msgstr "Ultima tasa"
@@ -640,3 +635,8 @@ msgstr "{}. Solo tiene {} unidades de {} exigidas."
 #: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
 msgid "Partially billed"
 msgstr "Parcialmente facturado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__invoiced
+msgid "Fully Invoiced"
+msgstr "Facturado completamente"

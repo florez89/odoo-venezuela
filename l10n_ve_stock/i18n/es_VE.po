@@ -378,7 +378,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__display_name
@@ -928,10 +927,7 @@ msgstr "El precio no puede ser negativo o cero."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__priority_location
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__priority_location
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__priority
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move__priority_location
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__priority_location
 msgid "Priority"
 msgstr "Prioridad"
 
@@ -1412,3 +1408,16 @@ msgstr ""
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
 msgid "inventory Valuation"
 msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__priority_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move__priority_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__priority_location
+msgid "Location Priority"
+msgstr "Prioridad de ubicación"
+
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__name
+msgid "Location Name"
+msgstr "Nombre de ubicación"

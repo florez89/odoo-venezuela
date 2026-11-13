@@ -40,7 +40,7 @@ class AccountPaymentRegister(models.TransientModel):
         help="The rate of the payment",
         digits="Tasa",
         compute="_compute_foreign_rate_display",
-        string=_("Foreign Rate Display"),
+        string="Foreign Rate Display",
         store=False,
     )
     @api.depends('currency_id', 'payment_date')

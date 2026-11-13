@@ -60,7 +60,7 @@ class AccountMove(models.Model):
     free_form_copy_number = fields.Integer(default=0, copy=False)
 
     invoice_date_display_datetime = fields.Datetime(
-        string="Invoice Date",
+        string="Invoice Date and Time",
         readonly=True,
         copy=False,
     )

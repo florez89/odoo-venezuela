@@ -2473,7 +2473,6 @@ msgstr "Inicio"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__state
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__state
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__state
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__state_show
 msgid "State"
 msgstr "Estado"
 
@@ -2573,7 +2572,6 @@ msgid "Tax Unit"
 msgstr "Unidad Tributaria"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_invoice_amount
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_invoice_amount
 msgid "Taxable Income"
 msgstr "Base Imponible"
@@ -2982,7 +2980,6 @@ msgid "Total Factura"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_iva_amount
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_iva_amount
 msgid "Total IVA"
 msgstr ""
@@ -3015,7 +3012,6 @@ msgstr "Total Facturado"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type_show
 msgid "Type"
 msgstr "Tipo"
 
@@ -3531,7 +3527,6 @@ msgstr "Cantidad de retenciones ISLR"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_iva_retention
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__count_municipal_retention
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_iva_retention
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_municipal_retention
 msgid "count iva retention"
 msgstr "Cantidad de retenciones de IVa"
 
@@ -3922,3 +3917,33 @@ msgstr ""
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The last tier must have no upper limit (leave 'stop' empty)."
 msgstr "El último tramo no debe tener límite superior (deje 'stop' vacío)."
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__count_municipal_retention
+msgid "Municipal Retention Count"
+msgstr "Cantidad de retenciones municipales"
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_invoice_amount
+msgid "Foreign Taxable Income"
+msgstr "Base imponible (moneda alterna)"
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_iva_amount
+msgid "Foreign Total IVA"
+msgstr "Total IVA (moneda alterna)"
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__state_show
+msgid "State Label"
+msgstr "Etiqueta de estado"
+
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type_show
+msgid "Type Label"
+msgstr "Etiqueta de tipo"

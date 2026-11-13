@@ -33,9 +33,9 @@ class RetentionLineReport(models.Model):
     retention_percentage = fields.Char(compute="_compute_percentages")
     retention_amount = fields.Monetary(currency_field="currency_id")
     state = fields.Char()
-    state_show = fields.Char(string="State")
+    state_show = fields.Char(string="State Label")
     type = fields.Char()
-    type_show = fields.Char(string="Type")
+    type_show = fields.Char(string="Type Label")
 
     @property
     def _table_query(self):

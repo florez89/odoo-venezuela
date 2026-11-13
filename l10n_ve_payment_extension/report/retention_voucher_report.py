@@ -9,6 +9,7 @@ RETAINED_COLUMN = "Impuesto Retenido"
 
 class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
     _name = "report.l10n_ve_payment_extension.retention_voucher_template"
+    _description = "Retention Voucher Report"
 
     @api.model
     def _get_report_values(self, docids, data=None):

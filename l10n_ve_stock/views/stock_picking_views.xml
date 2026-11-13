@@ -20,7 +20,7 @@
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@class='oe_button_box']" position="inside">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
                 <field name="type_delivery_step" invisible="1"/>
                 <field name="picks_count" invisible="1"/>
                 <field name="packs_count" invisible="1"/>

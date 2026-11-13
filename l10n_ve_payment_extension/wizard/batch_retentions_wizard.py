@@ -11,6 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class BatchRetentionsWizard(models.TransientModel):
     _name = "batch.retentions.wizard"
+    _description = "Batch Retentions Wizard"
 
     name = fields.Char(string='Name', compute='_compute_name', store=True)
 

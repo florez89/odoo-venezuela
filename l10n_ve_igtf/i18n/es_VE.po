@@ -93,12 +93,6 @@ msgid "Advance Supplier Account"
 msgstr "Cuenta de anticipo de proveedores"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
-msgid "Amount with IGTF"
-msgstr "Monto IGTF"
-
-#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_without_difference
 msgid "Amount without Difference"
 msgstr "Monto sin IGTF"
@@ -792,3 +786,15 @@ msgid ""
 msgstr ""
 "El asiento de cruce de anticipo %s no tiene pago origen, por lo que no puede "
 "publicarse."
+
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
+msgid "IGTF Amount to Pay"
+msgstr "Monto IGTF"
+
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
+msgid "Amount with IGTF"
+msgstr "Monto con IGTF"

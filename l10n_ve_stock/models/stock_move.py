@@ -5,7 +5,7 @@ class StockMove(models.Model):
     _order = "priority_location asc"
 
     priority_location = fields.Integer(
-        string="Priority", related="product_id.priority_location", store=True
+        string="Location Priority", related="product_id.priority_location", store=True
     )
 
     def _action_done(self, cancel_backorder=False):

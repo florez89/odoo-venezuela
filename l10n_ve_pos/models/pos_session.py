@@ -2,7 +2,6 @@ from datetime import datetime
 
 from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
-from odoo.osv.expression import AND, OR
 from odoo.exceptions import UserError, ValidationError
 import logging
 

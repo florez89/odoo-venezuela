@@ -723,7 +723,6 @@ msgstr "Facturada"
 #. module: l10n_ve_stock_account
 #. odoo-python
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_ids
 msgid "Invoices"
 msgstr "Facturas"
@@ -1264,11 +1263,6 @@ msgid "Transporte (Conductor)"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__operation_code
-msgid "Operation Code"
-msgstr "Código de operación"
-
-#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__type_of_return
 msgid "Type of Return"
 msgstr "Tipo de devolución"
@@ -1513,3 +1507,15 @@ msgstr "Número de transporte"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_type
 msgid "Vehicle Type"
 msgstr "Tipo de vehículo"
+
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__invoice_count
+msgid "Invoice Count"
+msgstr "Cantidad de facturas"
+
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__operation_code
+msgid "Operation Code"
+msgstr "Código de operación"

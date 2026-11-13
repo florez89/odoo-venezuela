@@ -29,7 +29,7 @@ class SaleOrderLine(models.Model):
         store=True,
     )
 
-    invoiced = fields.Boolean(compute="_compute_invoiced", store=True, copy=False)
+    invoiced = fields.Boolean(string="Fully Invoiced", compute="_compute_invoiced", store=True, copy=False)
 
     # override
     @api.depends("product_id", "product_uom_id", "product_uom_qty","order_id.currency_id")

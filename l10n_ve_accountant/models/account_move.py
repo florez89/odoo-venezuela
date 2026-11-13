@@ -365,12 +365,12 @@ class AccountMove(models.Model):
     amount = fields.Float(tracking=True)
 
     real_portion_amount = fields.Monetary(
-        string=_("Real Portion"),
+        string="Real Portion",
         currency_field='company_currency_id',
-        help=_("Accumulated remainder from cross-currency rounding."),
+        help="Accumulated remainder from cross-currency rounding.",
     )
     real_portion_count = fields.Integer(
-        string=_("Real Portion Adjustments"),
+        string="Real Portion Adjustments",
         default=0,
     )
     # Stored to avoid KeyError in trigger tree when

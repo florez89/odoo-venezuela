@@ -2,21 +2,21 @@
     <data>
         <template id="pos_session_sales_details_foreign" inherit_id="point_of_sale.pos_session_sales_details">
             <!-- Per payment method: add the foreign-currency (Bs/USD) equivalent next to the native amount -->
-            <xpath expr="//div[@id='payments']//tr[@t-foreach='payments']/td[@class='text-end']" position="after">
+            <xpath expr="//div[@id='payments']//tr[@t-foreach='payments']/td[hasclass('text-end')]" position="after">
                 <td class="text-end" t-if="foreign_currency">
                     <t t-out="payment['f_total']" t-options="{'widget': 'monetary', 'display_currency': foreign_currency}"/>
                 </td>
             </xpath>
 
             <!-- Grand total row -->
-            <xpath expr="//div[@id='payments']//tr[@class='fs-5']/th[@class='text-end fw-bolder']" position="after">
+            <xpath expr="//div[@id='payments']//tr[hasclass('fs-5')]/th[hasclass('text-end', 'fw-bolder')]" position="after">
                 <th class="text-end fw-bolder" t-if="foreign_currency">
                     <t t-out="foreign_total_paid" t-options="{'widget': 'monetary', 'display_currency': foreign_currency}"/>
                 </th>
             </xpath>
 
             <!-- Per payment method breakdown -->
-            <xpath expr="//div[@id='payments']//tr[@t-foreach='payments_per_method']/td[@class='text-end']" position="after">
+            <xpath expr="//div[@id='payments']//tr[@t-foreach='payments_per_method']/td[hasclass('text-end')]" position="after">
                 <td class="text-end" t-if="foreign_currency">
                     <t t-out="ppm['f_total']" t-options="{'widget': 'monetary', 'display_currency': foreign_currency}"/>
                 </td>

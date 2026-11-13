@@ -594,8 +594,6 @@ msgstr "Ajuste de débito alterno"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_inverse_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_inverse_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_inverse_rate
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_move_foreign_inverse_rate
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_move_foreign_inverse_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_inverse_rate
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
 msgid "Foreign Inverse Rate"
@@ -2168,3 +2166,15 @@ msgstr ""
 "No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
 "%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
 "(%(rounding)s) y se redondeó a cero."
+
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_move_foreign_inverse_rate
+msgid "Debit Foreign Inverse Rate"
+msgstr "Tasa inversa alterna (débito)"
+
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_move_foreign_inverse_rate
+msgid "Credit Foreign Inverse Rate"
+msgstr "Tasa inversa alterna (crédito)"

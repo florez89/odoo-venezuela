@@ -61,16 +61,16 @@
                 />
             </xpath>
 
-            <xpath expr="//button[@name='action_invoice_sent' and contains(@class, 'oe_highlight')]" position="attributes">
+            <xpath expr="//button[@name='action_invoice_sent' and hasclass('oe_highlight')]" position="attributes">
                 <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
             </xpath>
 
             <!-- 2. Segundo botón: Send (Estándar / sin oe_highlight) -->
-            <xpath expr="//button[@name='action_invoice_sent' and not(contains(@class, 'oe_highlight'))]" position="attributes">
+            <xpath expr="//button[@name='action_invoice_sent' and not(hasclass('oe_highlight'))]" position="attributes">
                 <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
             </xpath>
 
-            <xpath expr="//div[@class='d-flex'][1]" position="after">
+            <xpath expr="//div[@name='due_date']" position="after">
                 <field name="is_purchase_international" invisible="1"/>
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
                 <field name="import_file_number_purchase_international" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>

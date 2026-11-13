@@ -15,7 +15,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     amount = fields.Monetary(currency_field='currency_id', store=True, readonly=False,
         compute='_compute_amount')
     
-    is_igtf = fields.Boolean(string="IGTF", 
+    is_igtf = fields.Boolean(
+                             string="IGTF",
                              help="IGTF",
                              compute="_compute_check_igtf", store=True)
                              
@@ -45,7 +46,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         compute="_compute_amount", readonly=False,
     )
     igtf_to_show = fields.Monetary(
-        string="IGTF to Show", compute="_compute_amount", readonly=False,
+        string="IGTF Amount to Pay", compute="_compute_amount", readonly=False,
     )
 
     is_igtf_on_foreign_exchange = fields.Boolean(

@@ -33,7 +33,7 @@ class ResCompany(models.Model):
     )
 
     invoice_cron_type = fields.Selection(
-        [("last_business_day", _("Last Business Day")), ("last_day", _("Last Day"))],
+        [("last_business_day", "Last Business Day"), ("last_day", "Last Day")],
         string="Date Cron Invoice",
         default="last_business_day",
         required=True,

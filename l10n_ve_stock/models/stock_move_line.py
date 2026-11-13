@@ -11,7 +11,7 @@ class StockMoveLine(models.Model):
     product_tag_ids = fields.Many2many(related="product_id.product_tag_ids")
 
     priority_location = fields.Integer(
-        string="Priority", related="product_id.priority_location", store=True
+        string="Location Priority", related="product_id.priority_location", store=True
     )
 
     def _get_fields_stock_barcode(self):
