@@ -30,9 +30,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
 
         # ───────────────────────────────────────────────────── helpers
+        # Odoo 18: accounts belong to companies through company_ids (no company_id)
         def acc(code, ttype, name, recon=False):
             a = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", self.company.id)], limit=1
             )
             if not a:
                 a = Account.create(
@@ -41,7 +42,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_id": self.company.id,
+                        "company_ids": [self.company.id],
                     }
                 )
             return a

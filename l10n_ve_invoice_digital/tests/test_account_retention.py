@@ -44,7 +44,7 @@ class TestAccumulatedRate(TransactionCase):
             })
 
         self.expense_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
+            ('company_ids', 'in', self.company.id),
             ('account_type', '=', 'expense'),
             ('deprecated', '=', False)
         ], limit=1)
@@ -54,13 +54,13 @@ class TestAccumulatedRate(TransactionCase):
                 'name': 'Test Expense Account',
                 'code': '600000',
                 'account_type': 'expense',
-                'company_id': self.company.id,
+                'company_ids': [self.company.id],
                 'reconcile': False,
             })
 
         # Cuenta de pasivo (para partner)
         self.payable_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
+            ('company_ids', 'in', self.company.id),
             ('account_type', '=', 'liability_payable'),
             ('deprecated', '=', False)
         ], limit=1)
@@ -70,9 +70,24 @@ class TestAccumulatedRate(TransactionCase):
                 'name': 'Test Payable Account',
                 'code': '200000',
                 'account_type': 'liability_payable',
-                'company_id': self.company.id,
+                'company_ids': [self.company.id],
                 'reconcile': True,
             })
+
+        # Odoo 18 only creates the journal entry of a payment when its payment method line has an
+        # outstanding account, and the retention payments are reconciled with that entry.
+        outstanding_account = self.env['account.account'].create({
+            'name': 'Outstanding Payments',
+            'code': '110300',
+            'account_type': 'asset_current',
+            'company_ids': [self.company.id],
+            'reconcile': True,
+        })
+        self.env['account.payment.method.line'].search([
+            ('journal_id.company_id', '=', self.company.id),
+            ('journal_id.type', 'in', ('bank', 'cash')),
+            ('payment_account_id', '=', False),
+        ]).payment_account_id = outstanding_account
 
         self.type_person = self.env['type.person'].create({
             'name': 'No Juridica',

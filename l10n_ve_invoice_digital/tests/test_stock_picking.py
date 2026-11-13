@@ -62,7 +62,9 @@ class TestStockPickingApiCalls(TransactionCase):
         # Crear producto almacenable
         self.product_storable = self.ProductProduct.create({
             'name': 'Producto Almacenable',
-            'type': 'product',
+            # Odoo 18: storable products are type "consu" with is_storable
+            'type': 'consu',
+            'is_storable': True,
             'categ_id': self.product_category.id,
             'uom_id': self.uom_unit.id,
             'uom_po_id': self.uom_unit.id,

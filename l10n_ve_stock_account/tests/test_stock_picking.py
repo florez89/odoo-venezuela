@@ -59,11 +59,12 @@ class TestStockPickingInvoice(TransactionCase):
         self.product = self.env["product.product"].create(
             {
                 "name": "Producto Prueba",
-                "type": "product",
+                # Odoo 18: storable products are type "consu" with is_storable
+                "type": "consu",
+                "is_storable": True,
                 "list_price": 100,
                 "barcode": "123456789",
                 "taxes_id": [(6, 0, [self.tax_iva16.id])],
-                "detailed_type": "product",
             }
         )
 
