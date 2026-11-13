@@ -2,7 +2,7 @@
 
 {
     "name": "Journal Sequence For Odoo 18",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Accounting",
     "summary": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
     "description": "Odoo Journal Sequence, Journal Entry Sequence, Odoo 18 Journal Sequence, Journal Sequence For Invoice",
@@ -19,6 +19,6 @@
     "license": "OPL-1",
     "price": 12,
     "currency": "USD",
-    "post_init_hook": "create_journal_sequences",
+    "pre_init_hook": "create_journal_sequences",
     "images": ["static/description/banner.png"],
 }
