@@ -2,8 +2,9 @@
     "name": "Venezuela - POS Self Order / Kiosk",
     "summary": "Ajustes de l10n_ve_pos para el Kiosko/Autopedido nativo: moneda foránea e identificación del cliente por cédula",
     "license": "LGPL-3",
-    "author": "Binauraldev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Point of Sale",
     "version": "19.0.1.7.1",
     "depends": [

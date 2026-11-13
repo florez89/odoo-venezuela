@@ -1,8 +1,9 @@
 {
     "name": "Venezuela - CRM Moneda Alterna",
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Sales/CRM",
     "version": "19.0.1.0.0",
     "depends": ["crm", "sale", "l10n_ve_rate", "l10n_ve_accountant"],

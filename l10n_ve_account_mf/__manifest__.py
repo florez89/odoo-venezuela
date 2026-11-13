@@ -6,7 +6,9 @@
     "version": "19.0.1.2.1",
     "category": "Accounting",
     "license": "LGPL-3",
-    "author": "Binaural",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "support": "contacto@binaural.dev",
     "depends": [
         "account",

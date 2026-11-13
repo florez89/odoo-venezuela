@@ -1,8 +1,9 @@
 {
     "name": "Venezuela - The Factory HKA / Guía de Despacho",
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Accounting",
     "version": "19.0.1.2.2",
     "depends": [

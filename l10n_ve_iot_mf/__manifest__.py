@@ -9,8 +9,9 @@
     "license": "LGPL-3",
     "category": "Accounting",
     "version": "19.0.1.0.4",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "depends": [
         "iot",
         "account",

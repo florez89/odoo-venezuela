@@ -43,8 +43,9 @@
     * Si el pago que originó una ND se desconcilia/cancela, se genera
       automáticamente una Nota de Crédito en Forma Libre que la reversa.
     """,
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Accounting",
     "version": "19.0.1.0.2",
 

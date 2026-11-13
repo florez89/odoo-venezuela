@@ -4,8 +4,9 @@
         Módulo de Auditoría de la localización de Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Technical",
     "version": "1.5",
     "data": [

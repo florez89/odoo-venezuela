@@ -4,10 +4,11 @@
         Módulo de POS (Punto de Venta) en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
     "support": "contacto@binaural.dev",
     "category": "Point of Sale",
-    "website": "https://binauraldev.com/",
+    "website": "https://github.com/florez89/odoo-venezuela",
     "version": "19.0.1.28.2",
     # any module necessary for this one to work correctly
     "depends": [

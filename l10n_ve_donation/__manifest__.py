@@ -3,8 +3,10 @@
     "version": "19.0.2.0.6",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
-    "author": "",
-    "website": "",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
+    "license": "LGPL-3",
     "depends": [
         "l10n_ve_accountant",
         "l10n_ve_stock",

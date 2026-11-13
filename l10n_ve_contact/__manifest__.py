@@ -7,8 +7,9 @@
     "description": """
        Módulo para información de contactos de Venezuela
     """,
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Contacts/Contacts",
     "version": "19.0.1.8.2",
     "depends": ["base", "contacts", "account", "l10n_ve_rate", "l10n_ve_location"],

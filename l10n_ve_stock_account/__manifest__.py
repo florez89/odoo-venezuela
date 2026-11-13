@@ -4,8 +4,9 @@
         Inventario/Contabilidad para la localización en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://www.binauraldev.com",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Stock Account",
     "version": "19.0.2.1.7",
     "depends": [

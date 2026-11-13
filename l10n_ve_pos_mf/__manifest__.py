@@ -5,7 +5,9 @@
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal (Web Serial API)",
     "sequence": "1",
     "license": "LGPL-3",
-    "author": "Binaural",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "support": "contacto@binaural.dev",
     "depends": [
         "point_of_sale",

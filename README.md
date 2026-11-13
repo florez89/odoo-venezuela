@@ -2,11 +2,13 @@
 
 ## Propósito de esta Localización
 
-En Binaural C.A., estamos comprometidos con el desarrollo de herramientas que impulsen la mejora continua de nuestro país. Por eso, hemos decidido liberar esta localización venezolana para Odoo con el objetivo de:
+Localización venezolana para Odoo mantenida por **Gustavo Florez** ([@florez89](https://github.com/florez89)). Parte de la localización liberada por Binaural C.A. bajo LGPL-3 y la extiende con correcciones, compatibilidad con Odoo 19 y módulos propios (por ejemplo, nómina). Sus objetivos son:
 
 - Construir una localización **robusta**, **estable** y **escalable** que cumpla con las necesidades fiscales, contables y legales de Venezuela.
 - Permitir que la comunidad de software libre pueda colaborar y aportar ideas que optimicen las herramientas existentes y fomenten el crecimiento tecnológico en el país.
 - Promover la colaboración y la mejora colectiva a través del trabajo conjunto de empresas, desarrolladores y usuarios.
+
+Repositorio: <https://github.com/florez89/odoo-venezuela>
 
 ## ¿Cómo Realizar Aportes?
 
@@ -145,11 +147,13 @@ Estamos trabajando para mejorar continuamente esta localización. Entre nuestros
 
 ## Descargo de Responsabilidad
 
-Esta localización se proporciona "tal cual", sin garantías de ningún tipo, expresas o implícitas. El uso de esta localización es bajo tu propia responsabilidad. Binaural C.A. no se hace responsable por el uso indebido del software o por incumplimientos legales derivados de su implementación.
+Esta localización se proporciona "tal cual", sin garantías de ningún tipo, expresas o implícitas. El uso de esta localización es bajo tu propia responsabilidad. Ni el mantenedor ni Binaural C.A. se hacen responsables por el uso indebido del software o por incumplimientos legales derivados de su implementación.
 
 ---
 
-Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mención:
+## Créditos
+
+Esta localización se basa en el trabajo de [Binaural C.A.](https://github.com/binaural-dev/odoo-venezuela), que la desarrolló y liberó bajo LGPL-3. Agradecimiento especial a quienes colaboraron en el proyecto original:
 
 - Daniela Gomez : [@DanielaGomezR93](https://github.com/DanielaGomezR93)
 - Anderson Armeya : [@andyengit](https://github.com/andyengit)
@@ -170,9 +174,9 @@ Queremos dar un especial agradecimiento a las personas que han colaborado con es
 - Manuel Guerrero : [@manuelgc1201](https://github.com/manuelgc1201)
 
 
-Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra forma han colaborado con nuestro equipo.
+Y a todo el equipo interno de Binaural C.A. que colaboró de una u otra forma.
 
 ---
 
-¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
+¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, abre un _issue_ en <https://github.com/florez89/odoo-venezuela/issues>.
 

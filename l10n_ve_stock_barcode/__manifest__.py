@@ -4,8 +4,9 @@
        Módulo para traducción de códigos de barras en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Inventory/Stock",
     "version": "19.0.1.3.0",
     "depends": ["stock_barcode"],

@@ -19,8 +19,9 @@
 
         Ver README.rst para el detalle de configuración por sucursal.
     """,
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Sales",
     "depends": ["product"],
     "data": [

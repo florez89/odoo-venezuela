@@ -2,8 +2,9 @@
     "name": "Venezuela - The Factory HKA",
     "description": "Integración de facturación digital con The Factory HKA para Venezuela.",
     "license": "LGPL-3",
-    "author": "Binauraldev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Accounting",
     "version": "19.0.1.4.8",
     "depends": [

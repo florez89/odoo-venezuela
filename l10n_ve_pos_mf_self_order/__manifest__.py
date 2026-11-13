@@ -7,8 +7,9 @@
         resiliente al servidor (imprimir-primero, sincronizar-después).
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Point of Sale",
     "version": "19.0.1.0.0",
     "depends": [

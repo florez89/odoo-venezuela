@@ -52,7 +52,9 @@ might use is ready in advance):
   clear error instead of silently renumbering a journal shared with normal
   business documents.
 """,
-    'author': 'Binaural',
+    'author': 'Gustavo Florez, Binaural',
+    'maintainers': ['florez89'],
+    'website': 'https://github.com/florez89/odoo-venezuela',
     'depends': [
         'account', 'l10n_ve_accountant', 'od_journal_sequence', 'l10n_ve_invoice',
         'l10n_ve_igtf', 'account_invoice_pricelist',

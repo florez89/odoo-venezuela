@@ -5,8 +5,9 @@
         Provee el modelo extendido y monitoreo de requests salientes.
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Technical",
     "version": "19.0.0.0.0",
     "depends": [

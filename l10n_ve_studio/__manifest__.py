@@ -4,8 +4,9 @@
         Limitación de Odoo-Studio para la localización en Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Base",
     "version": "19.0.1.0.0",
     # any module necessary for this one to work correctly

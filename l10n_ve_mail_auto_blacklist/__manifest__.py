@@ -4,8 +4,9 @@
                'and block every outgoing email to blacklisted addresses',
     'version': '19.0.1.0.1',
     'category': 'Marketing/Email Marketing',
-    'author': 'Binauraldev',
-    'website': 'https://binauraldev.com/',
+    'author': 'Gustavo Florez, Binaural',
+    'maintainers': ['florez89'],
+    'website': 'https://github.com/florez89/odoo-venezuela',
     'license': 'LGPL-3',
     'depends': ['mass_mailing'],
     'data': [
