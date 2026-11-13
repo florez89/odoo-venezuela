@@ -420,6 +420,15 @@ La tasa de la orden (`_compute_rate`, `create`, `default_rate`/`default_inverse_
 - **WHEN** se confirma una orden sin tasa cargada en ese mismo escenario
 - **THEN** la validación de tasa usa el día del usuario y la confirmación continúa
 
+### Requirement: Aviso de tasa desactualizada en la orden
+
+La orden DEBE (MUST) calcular, sin guardarlo, `foreign_rate_used_date` con `get_rate_in_force_date` para `_l10n_ve_rate_date()` (vacío si la tasa es manual o distinta a la vigente), `foreign_rate_age_days` e `is_foreign_rate_outdated` (antigüedad mayor a `rate_max_age_days`, distinto de 0). En borrador o enviada muestra una franja de aviso. Solo avisa: confirmar la orden no contabiliza nada y su factura toma, y avisa, su propia tasa.
+
+#### Scenario: Cotización con tasa desactualizada
+
+- **WHEN** la tasa vigente de la orden tiene más días que el límite
+- **THEN** la orden muestra la franja y se puede confirmar igual
+
 ### Requirement: Segundo bloque de totales en la orden de venta
 
 El formulario de `sale.order` DEBE (MUST) mostrar, debajo del widget de totales nativo (`account-tax-totals-field`, grupo `sale_total`), el widget `account-tax-ves-totals-field` de `l10n_ve_accountant`, con el campo `foreign_currency_id` cargado en la vista para que el widget pueda formatear la moneda alterna. Si la orden está en la moneda de la compañía muestra los montos en la moneda alterna (claves `*_foreign_currency` de `tax_totals`); si está en otra moneda muestra los montos en VES. Si la orden está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el campo se oculta (`invisible="currency_id == company_currency_id and not foreign_currency_id"`, igual que en la factura; `company_currency_id` se carga en la vista). El segundo bloque NO DEBE (MUST NOT) mostrar filas de IGTF en la orden de venta (ver `l10n_ve_igtf`). Los montos provienen de `tax_totals` y no se recalculan en la vista (ti-85450).

@@ -83,6 +83,8 @@ Toda búsqueda de tasa que no encuentre resultado DEBE (MUST) detener la operaci
 
 La compañía DEBE (MUST) tener `rate_max_age_days` («Maximum Rate Age (Days)», 2 por defecto, editable en Ajustes; 0 desactiva el aviso; no puede ser negativo). Un documento cuya tasa tiene más días de antigüedad que ese límite NO se bloquea: muestra un aviso y pide confirmación antes de confirmarse, y al confirmarse deja constancia en el chatter (ver `l10n_ve_accountant`).
 
+`get_rate_in_force_date(foreign_currency_id, rate_date, foreign_inverse_rate)` DEBE (MUST) devolver la fecha de la tasa vigente en `rate_date` solo si el documento la usa (mismo `foreign_inverse_rate`, 10 decimales); si no hay tasa o el documento tiene otra tasa (escrita a mano o tomada de otra fecha a propósito) devuelve `False` y el documento no avisa.
+
 #### Scenario: Valor por defecto
 
 - **WHEN** se crea una compañía

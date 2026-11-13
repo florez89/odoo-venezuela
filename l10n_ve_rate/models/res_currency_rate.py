@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from odoo import models, fields, api, _
+from odoo.tools import float_compare
 from odoo.exceptions import UserError
 import logging
 
@@ -132,6 +133,26 @@ class ResCurrencyRate(models.Model):
         if with_rate_date:
             values["rate_date"] = rate.name
         return values
+
+    @api.model
+    def get_rate_in_force_date(self, foreign_currency_id, rate_date, foreign_inverse_rate):
+        """Return the date of the rate in force on `rate_date` when a document
+        uses it (same `foreign_inverse_rate`), or False.
+
+        A document whose rate does not match the one in force (typed by hand or
+        taken from another date on purpose, like a payment registered with the
+        invoice rate) has no rate in force to age, so it never warns.
+        """
+        if not foreign_currency_id or not foreign_inverse_rate:
+            return False
+        values = self.compute_rate(
+            foreign_currency_id, rate_date, raise_if_not_found=False, with_rate_date=True
+        )
+        if not values.get("rate_date") or float_compare(
+            values["foreign_inverse_rate"], foreign_inverse_rate, precision_digits=10
+        ):
+            return False
+        return values["rate_date"]
 
     @api.model
     def compute_inverse_rate(self, rate):

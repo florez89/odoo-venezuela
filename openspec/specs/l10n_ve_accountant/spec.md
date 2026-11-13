@@ -552,6 +552,25 @@ Cada `account.move` DEBE (MUST) guardar en `foreign_rate_date` la fecha de la ta
 - **WHEN** un proceso contabiliza por código una factura cuya tasa supera el límite
 - **THEN** se contabiliza sin pedir confirmación y queda la nota en el chatter
 
+### Requirement: Aviso de tasa desactualizada en pagos
+
+Cada `account.payment` DEBE (MUST) calcular, sin guardarlo, `foreign_rate_date` con `get_rate_in_force_date` para su fecha (vacío si su tasa se fijó a propósito, por ejemplo con la tasa de la factura), `foreign_rate_age_days` y `is_foreign_rate_outdated` (antigüedad mayor a `rate_max_age_days`, distinto de 0). No se bloquea:
+
+- El borrador muestra una franja de aviso.
+- El botón Confirmar del formulario envía `l10n_ve_check_rate_age` y `action_post` abre `account.payment.rate.age.wizard` con los pagos desactualizados; al confirmar se contabilizan.
+- El código que confirma pagos sin esa clave (registro de pagos, POS) no se detiene.
+- Todo pago confirmado con tasa desactualizada deja en el chatter: "Posted by <usuario> with the exchange rate of <fecha>, <días> days old."
+
+#### Scenario: Pago con la tasa fijada a propósito
+
+- **WHEN** el pago tiene una tasa distinta a la vigente en su fecha
+- **THEN** no hay aviso ni nota
+
+#### Scenario: Confirmar un pago desde el formulario con tasa desactualizada
+
+- **WHEN** el usuario pulsa Confirmar en un pago cuya tasa supera el límite
+- **THEN** se abre el wizard, el pago sigue en borrador hasta confirmar y al confirmar queda la nota en el chatter
+
 ### Requirement: Confirmación de facturas de venta con alerta previa
 
 `action_post` de `account.move` DEBE (MUST) interceptar la confirmación cuando falta la clave de contexto `move_action_post_alert` y el recordset contiene algún documento `out_invoice`/`out_refund` (o, con `l10n_ve_check_rate_age`, alguna factura con tasa desactualizada), devolviendo la acción del wizard `move.action.post.alert.wizard` con `default_move_id` del primer documento de venta encontrado y abortando la publicación de todo el recordset; la publicación solo procede cuando el usuario confirma en el wizard (que reinvoca `action_post` con la clave en contexto).

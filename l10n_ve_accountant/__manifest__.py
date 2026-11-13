@@ -8,7 +8,7 @@
     "maintainers": ["florez89"],
     "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.44",
+    "version": "19.0.1.0.45",
     "depends": [
         "base",
         "web",
@@ -54,6 +54,7 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
+        "wizard/account_payment_rate_age_wizard_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {

@@ -404,6 +404,37 @@ class SaleOrder(models.Model):
             return fields.Datetime.context_timestamp(self, self.date_order).date()
         return fields.Date.context_today(self)
 
+    foreign_rate_used_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_foreign_rate_age",
+        help="Date of the rate in force used by the order. Empty when its rate "
+        "was set on purpose (typed by hand or frozen).",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+    )
+
+    @api.depends("foreign_currency_id", "foreign_inverse_rate", "date_order", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        """Banner only: confirming an order posts nothing and its invoice takes
+        (and warns about) its own rate."""
+        Rate = self.env["res.currency.rate"]
+        for sale in self:
+            order_date = sale._l10n_ve_rate_date()
+            rate_date = Rate.with_company(sale.company_id).get_rate_in_force_date(
+                sale.foreign_currency_id.id, order_date, sale.foreign_inverse_rate
+            )
+            age = (order_date - rate_date).days if rate_date else 0
+            limit = sale.company_id.rate_max_age_days
+            sale.foreign_rate_used_date = rate_date
+            sale.foreign_rate_age_days = age
+            sale.is_foreign_rate_outdated = bool(limit and age > limit)
+
     @api.depends("foreign_currency_id", "date_order")
     def _compute_rate(self):
         """

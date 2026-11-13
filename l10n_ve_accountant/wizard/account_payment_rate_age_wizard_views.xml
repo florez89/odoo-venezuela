@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_payment_rate_age_wizard_form" model="ir.ui.view">
+        <field name="name">account.payment.rate.age.wizard.form</field>
+        <field name="model">account.payment.rate.age.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Outdated Exchange Rate">
+                <div class="alert alert-warning" role="alert">
+                    The exchange rate of these payments is older than the maximum allowed. Check that it is the
+                    rate in force before continuing: the confirmation is recorded in the payment history.
+                </div>
+                <field name="outdated_payment_ids" readonly="1">
+                    <list>
+                        <field name="name"/>
+                        <field name="date"/>
+                        <field name="foreign_rate_date"/>
+                        <field name="foreign_rate_age_days"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_confirm" string="Confirm" type="object" class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

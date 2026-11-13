@@ -72,6 +72,20 @@ class TestComputeRateFallback(TransactionCase):
         result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 1))
         self.assertEqual(set(result), {"foreign_rate", "foreign_inverse_rate"})
 
+    def test_rate_in_force_date_only_when_the_document_uses_it(self):
+        rate = self._create_rate(date(2023, 6, 1), 45.0)
+        in_force = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 6, 3))
+        self.assertEqual(
+            self.Rate.get_rate_in_force_date(
+                self.foreign_currency.id, date(2023, 6, 3), in_force["foreign_inverse_rate"]
+            ),
+            rate.name,
+        )
+        # a rate typed by hand is not the rate in force: nothing to age
+        self.assertFalse(
+            self.Rate.get_rate_in_force_date(self.foreign_currency.id, date(2023, 6, 3), 1 / 99.0)
+        )
+
     def test_compute_rate_raises_when_only_later_rates_exist(self):
         """A rate published after the date is never used."""
         self._create_rate(date(2023, 12, 1), 50.0)
