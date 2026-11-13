@@ -85,11 +85,14 @@ class AccountMoveLine(models.Model):
                 and not self.env.is_protected(self._fields["balance"], line)
             ):
                 rate = (
-                    line.foreign_inverse_rate
+                    # The related rate of the line is not computed yet while its move is created.
+                    (line.move_id.foreign_inverse_rate or line.foreign_inverse_rate)
                     if line.currency_id
                     in (self.env.ref("base.VEF"), self.env.ref("base.USD"))
                     else line.currency_rate
                 )
+                if not rate:
+                    continue
                 line.balance = line.company_id.currency_id.round(
                     line.amount_currency / rate
                 )

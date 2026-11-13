@@ -57,6 +57,21 @@ class AccountPayment(models.Model):
             )
         return payments
 
+    def _generate_move_vals(self, write_off_line_vals=None, force_balance=None, line_ids=None):
+        """
+        Odoo 18 creates the journal entry of the payment from these values (the payment no longer
+        inherits from its move), so the rates of the payment must be part of them: the lines are
+        converted with the rate of the move while it is created.
+        """
+        vals = super()._generate_move_vals(write_off_line_vals, force_balance, line_ids)
+        vals.update(
+            {
+                "foreign_rate": self.foreign_rate,
+                "foreign_inverse_rate": self.foreign_inverse_rate,
+            }
+        )
+        return vals
+
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the _syncrhonize_to_moves method to set the rate of the payment to its move.
