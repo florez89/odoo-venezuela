@@ -37,7 +37,22 @@ class AccountTax(models.Model):
             base_lines, currency, company, cash_rounding=cash_rounding
         )
         if not (company or self.env.company).foreign_currency_id:
-            # The IGTF amounts are also expressed in the foreign currency of the company.
+            # The IGTF amounts are also expressed in the foreign currency of the company,
+            # so none applies; views, reports and amount_to_pay_igtf still read the block.
+            zero = formatLang(self.env, 0.0, currency_obj=currency)
+            res["igtf"] = {
+                "apply_igtf": False,
+                "is_igtf_suggested": False,
+                "name": "",
+                "igtf_base_amount": 0.0,
+                "igtf_amount": 0.0,
+                "foreign_igtf_amount": 0.0,
+                "foreign_igtf_base_amount": 0.0,
+                "formatted_igtf_amount": zero,
+                "formatted_igtf_base_amount": zero,
+                "formatted_foreign_igtf_amount": zero,
+                "formatted_foreign_igtf_base_amount": zero,
+            }
             return res
 
         invoice = self.env["account.move"]
