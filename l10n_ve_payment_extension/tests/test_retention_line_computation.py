@@ -171,6 +171,10 @@ class TestRetentionLineComputation(TransactionCase):
             "property_account_income_id": self.acc_income.id,
             "supplier_taxes_id": [Command.clear()],
         })
+        # l10n_ve_accountant injects the company default purchase tax on create; clear it to get a tax-free bill.
+        product_no_tax.product_tmpl_id.with_context(skip_tax_validation_on_write=True).write(
+            {"supplier_taxes_id": [Command.clear()]}
+        )
         with Form(self.env["account.move"].with_context(
             default_move_type="in_invoice", default_journal_id=self.purchase_journal.id,
         )) as inv_form:
