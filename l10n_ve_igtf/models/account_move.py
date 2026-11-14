@@ -674,6 +674,11 @@ class AccountMove(models.Model):
         self.env.add_to_compute(
             self.env['account.move']._fields['payment_state'], self
         )
+        # The IGTF base depends only on `amount_residual` and can be computed
+        # while this cross is still being reconciled (partials not linked yet),
+        # leaving it at 0 on an invoice the advance fully paid: recompute it too.
+        for field_name in ('bi_igtf', 'igtf_top_aply', 'alter_bi_igtf', 'foreign_bi_igtf'):
+            self.env.add_to_compute(self.env['account.move']._fields[field_name], self)
 
         return True
     
