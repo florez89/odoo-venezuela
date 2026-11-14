@@ -53,8 +53,7 @@ msgstr "Porcentaje IGTF"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_igtf/static/src/xml/PaymentScreenStatus.xml:0
-#, python-format
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
 msgid "IGTF:"
 msgstr ""
 
@@ -137,3 +136,15 @@ msgstr "Aplicar IGTF"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_igtf.res_config_settings_binaural_pos_igtf
 msgid "Calculate IGTF with payments made in USD on current box"
 msgstr "Calcular IGTF con pagos realizados en USD en caja actual."
+
+#. module: l10n_ve_pos_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_status.xml:0
+msgid "BI IGTF:"
+msgstr "BI IGTF:"
+
+#. module: l10n_ve_pos_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_igtf/static/src/app/overrides/screens/payment_lines.xml:0
+msgid "IGTF ="
+msgstr "IGTF ="
