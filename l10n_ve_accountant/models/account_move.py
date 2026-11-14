@@ -382,7 +382,7 @@ class AccountMove(models.Model):
         """
         for vals in vals_list:
 
-            if 'name' in vals and vals['name'] != "/":
+            if vals.get('name') and vals['name'] != "/":
                 
                 domain = [
                     ('name', '=', vals['name']),
@@ -424,7 +424,7 @@ class AccountMove(models.Model):
 
         if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
-        if 'name' in vals and vals['name'] != "/":
+        if vals.get('name') and vals['name'] != "/":
             for move in self:
                 partner_id = vals.get('partner_id', move.partner_id.id)
                 
