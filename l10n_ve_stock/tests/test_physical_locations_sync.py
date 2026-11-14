@@ -1,4 +1,4 @@
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -182,7 +182,9 @@ class TestProductTemplateTaxesAndPrices(TransactionCase):
 
     def test_write_two_taxes_raises(self):
         template = self.env["product.template"].create({"name": "Two Taxes", "type": "consu"})
-        with self.assertRaises(ValidationError):
+        # UserError, not ValidationError: l10n_ve_accountant (when installed) rejects it first with a
+        # UserError; ValidationError, raised by this module alone, is a subclass of it.
+        with self.assertRaises(UserError):
             template.write(
                 {"taxes_id": [(6, 0, (self._tax("Tax A", 10) | self._tax("Tax B", 16)).ids)]}
             )
@@ -199,6 +201,8 @@ class TestProductTemplateTaxesAndPrices(TransactionCase):
         template = self.env["product.template"].create(
             {"name": "No Taxes", "type": "consu", "list_price": 50, "taxes_id": [(5, 0, 0)]}
         )
+        # l10n_ve_accountant (when installed) injects the company default tax on create; clear it to test the no-tax branch.
+        template.with_context(skip_tax_validation_on_write=True).write({"taxes_id": [(5, 0, 0)]})
         self.assertEqual(template.price_with_tax, 50)
         self.assertEqual(template.price_without_tax, 50)
 
