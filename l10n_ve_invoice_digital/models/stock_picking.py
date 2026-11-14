@@ -49,7 +49,7 @@ class StockPicking(models.Model):
 
         self.generate_document_data(document_number, DOCUMENT_TYPE)
 
-    def get_base_url(self):
+    def _get_tfhka_base_url(self):
         if self.company_id.url_tfhka:
             return self.company_id.url_tfhka.rstrip("/")
         raise UserError(_("The URL is not configured in the company settings."))
@@ -60,7 +60,7 @@ class StockPicking(models.Model):
         raise ValidationError(_("Configuration error: The authentication token is empty."))
 
     def call_tfhka_api(self, endpoint_key, payload):
-        base_url = self.get_base_url()
+        base_url = self._get_tfhka_base_url()
         endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
 
         if not endpoint:

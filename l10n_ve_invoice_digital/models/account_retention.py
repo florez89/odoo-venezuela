@@ -22,7 +22,7 @@ class AccountRetention(models.Model):
     show_digital_retention_islr = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
 
-    def get_base_url(self):
+    def _get_tfhka_base_url(self):
         if self.company_id.url_tfhka:
             return self.company_id.url_tfhka.rstrip("/")
         raise UserError(_("The URL is not configured in the company settings."))
@@ -33,7 +33,7 @@ class AccountRetention(models.Model):
         raise ValidationError(_("Configuration error: The authentication token is empty."))
 
     def call_tfhka_api(self, endpoint_key, payload):
-        base_url = self.get_base_url()
+        base_url = self._get_tfhka_base_url()
         endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
 
         if not endpoint:
