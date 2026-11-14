@@ -74,8 +74,9 @@ class TestSaleOrderForeignPricelist(TransactionCase):
         self.assertEqual(self.sale_order.pricelist_id.currency_id.name, 'USD')
         
         # Total in Base Currency (USD)
+        # l10n_ve_accountant gives every product the company default tax (IVA): check the untaxed base.
+        self.assertEqual(self.sale_order.amount_untaxed, 200)
         total_usd = self.sale_order.amount_total
-        self.assertEqual(total_usd, 200)
         
         # Expected Foreign Total in EUR (Rate 1 USD = 0.9 EUR)
         # 200 USD * 0.9 = 180 EUR
