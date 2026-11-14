@@ -10,46 +10,29 @@ class PosOrder(models.Model):
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.foreign_currency_id")
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True, default=0.0)
+    # Rate shown to the user (VEF per USD) when the order was created; the PoS
+    # sends it with the order (pos.order loads and serializes all its fields).
     foreign_currency_rate = fields.Float(readonly=True, required=False)
-    
-    def _process_order(self, order, draft, existing_order):
-        res = super()._process_order(order, draft, existing_order)
-        order = self.browse(res)
-        return res
-
-    @api.model
-    def _order_fields(self, ui_order):
-        res = super()._order_fields(ui_order)
-        _logger.info("UI ORDER: %s", ui_order)
-        res["foreign_amount_total"] = ui_order["foreign_amount_total"]
-        res["foreign_currency_rate"] = ui_order["foreign_currency_rate"]
-        return res
-
-    def _payment_fields(self, order, ui_paymentline):
-        res = super()._payment_fields(order,ui_paymentline)
-        res["foreign_amount"] = ui_paymentline["foreign_amount"]
-        res["foreign_rate"] = ui_paymentline["foreign_rate"]
-        return res
 
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
-        res.update(
-            {
-                "foreign_rate": self.foreign_currency_rate,
-                "foreign_inverse_rate": self.foreign_currency_rate,
-                "manually_set_rate": True,
-            }
-        )
+        if self.foreign_currency_rate:
+            res.update(
+                {
+                    "foreign_rate": self.foreign_currency_rate,
+                    "foreign_inverse_rate": self.env["res.currency.rate"].compute_inverse_rate(
+                        self.foreign_currency_rate
+                    ),
+                    "manually_set_rate": True,
+                }
+            )
         return res
 
-    def _export_for_ui(self, order):
-        res = super()._export_for_ui(order)
-        res["foreign_currency_rate"] = order.foreign_currency_rate
-        return res 
-
     def get_payments_order_refund(self):
-        return self.payment_ids.read()
+        return self.payment_ids.read(
+            ["payment_method_id", "display_name", "amount", "foreign_amount"]
+        )
 
     @api.model
     def _get_invoice_lines_values(self, line_values, pos_order_line):
@@ -57,20 +40,19 @@ class PosOrder(models.Model):
         res["foreign_price"] = pos_order_line.foreign_price
         return res
 
+
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
     foreign_currency_rate = fields.Float(related="order_id.foreign_currency_rate")
     foreign_price = fields.Float(readonly=True)
 
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        res = super()._load_pos_data_fields(config_id)
+        return res + [name for name in ("foreign_price",) if name not in res]
+
     def _prepare_refund_data(self, refund_order, PosOrderLineLot):
         res = super()._prepare_refund_data(refund_order, PosOrderLineLot)
         res.update({"foreign_price": self.foreign_price})
-        return res 
-
-    def _export_for_ui(self, orderline):
-        res = super()._export_for_ui(orderline)
-        res["foreign_price"] = orderline.foreign_price
-        res["foreign_currency_rate"] = orderline.foreign_currency_rate
         return res
-

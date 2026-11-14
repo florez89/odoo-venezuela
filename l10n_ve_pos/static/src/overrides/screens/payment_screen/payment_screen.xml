@@ -1,10 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="l10n_ve_pos.PaymentScreenMethods" t-inherit="point_of_sale.PaymentScreenMethods" t-inherit-mode="extension">
-        <xpath expr="//PaymentScreenPaymentLines" position="replace">
-        </xpath>
-        <xpath expr="//div[hasclass('paymentmethods')]" position="before">
-            <PaymentScreenPaymentLines paymentLines="paymentLines" deleteLine.bind="deletePaymentLine" sendForceDone.bind="sendForceDone" sendPaymentReverse.bind="sendPaymentReverse" sendPaymentCancel.bind="sendPaymentCancel" sendPaymentRequest.bind="sendPaymentRequest" selectLine.bind="selectPaymentLine" updateSelectedPaymentline.bind="updateSelectedPaymentline" />
+    <t t-name="l10n_ve_pos.PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('total')]" position="inside">
+            <div t-if="pos.foreignCurrency" class="ve-foreign-due fs-4">
+                <t t-esc="env.utils.formatForeignCurrency(currentOrder.get_foreign_total_with_tax())"/>
+            </div>
         </xpath>
     </t>
-
 </templates>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos.PaymentScreenPaymentLines" t-inherit="point_of_sale.PaymentScreenPaymentLines" t-inherit-mode="extension">
+        <xpath expr="//t[@t-if='line.isSelected()']//div[hasclass('payment-amount')]" position="inside">
+            <t t-if="pos.foreignCurrency">
+                / <span class="ve-foreign-amount" t-esc="formatForeignLineAmount(line)"/>
+            </t>
+        </xpath>
+        <xpath expr="//t[@t-if='line.isSelected()']/following-sibling::t[@t-else='']//div[hasclass('payment-amount')]" position="inside">
+            <t t-if="pos.foreignCurrency">
+                / <span class="ve-foreign-amount" t-esc="formatForeignLineAmount(line)"/>
+            </t>
+        </xpath>
+    </t>
+</templates>

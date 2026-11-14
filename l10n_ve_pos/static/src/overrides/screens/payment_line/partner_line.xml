@@ -1,9 +1,9 @@
-
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="PartnerLine" t-inherit="point_of_sale.PartnerLine" t-inherit-mode="extension" owl="1">
-        <xpath expr="//tr/td[1]" position="after">
-            <td>
-                <t t-out="props.partner.vat || ''"/>
+    <t t-name="l10n_ve_pos.PartnerLine" t-inherit="point_of_sale.PartnerLine" t-inherit-mode="extension">
+        <xpath expr="//tr[hasclass('partner-line')]/td[1]" position="after">
+            <td class="ve-partner-vat">
+                <t t-if="props.partner.vat"><t t-esc="props.partner.prefix_vat or ''"/><t t-esc="props.partner.vat"/></t>
             </td>
         </xpath>
     </t>

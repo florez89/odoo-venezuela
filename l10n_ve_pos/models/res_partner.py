@@ -18,7 +18,9 @@ class ResPartner(models.Model):
         return name
 
     @api.model
-    def create_from_ui(self, partner):
-        if partner.get("city_id", False):
-            partner["city_id"] = int(partner["city_id"])
-        return super().create_from_ui(partner)
+    def _load_pos_data_fields(self, config_id):
+        """The PoS shows the document type (V, J, E...) with the VAT. Partners are
+        created and edited in the PoS with the backend form (point_of_sale.
+        res_partner_action_edit_pos), which already has the VE fields."""
+        res = super()._load_pos_data_fields(config_id)
+        return res + [name for name in ("prefix_vat",) if name not in res]

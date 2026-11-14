@@ -127,7 +127,6 @@ msgstr "Descuento autorizado pos"
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/product_card/product_card.xml:0
-#, python-format
 msgid "Available:"
 msgstr "Disponible:"
 
@@ -285,16 +284,13 @@ msgstr "No permitir ventas menores a"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_editor/partner_editor.xml:0
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/partner_list/partner_list.xml:0
-#, python-format
 msgid "Document"
 msgstr "Documento"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
-#, python-format
 msgid "Empty Paymentline"
 msgstr "Linea de Pago Vacía"
 
@@ -407,7 +403,6 @@ msgstr ""
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/app/components/full_refund/full_refund.xml:0
-#, python-format
 msgid "Full refund"
 msgstr "Reembolso total"
 
@@ -555,8 +550,6 @@ msgstr "Reporte de Pagos"
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
-#, python-format
 msgid "Payments"
 msgstr "Pagos"
 
@@ -746,7 +739,6 @@ msgstr "Fecha de Inicio"
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/order_receipt/order_receipt.xml:0
-#, python-format
 msgid "TOTAL"
 msgstr ""
 
@@ -770,7 +762,6 @@ msgstr "Impuestos"
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
-#, python-format
 msgid "Taxes:"
 msgstr "Impuestos:"
 
@@ -830,8 +821,6 @@ msgstr "Total de productos:"
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.report_saledetails
-#, python-format
 msgid "Total:"
 msgstr ""
 
@@ -865,15 +854,13 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #. odoo-javascript
-#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_top.xml:0
-#, python-format
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen_button.xml:0
 msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/screens/payment_screen/payment_screen.js:0
-#, python-format
 msgid "You can't validate with empty payment lines"
 msgstr "No puede validar con lineas de pago vacias"
 
@@ -902,3 +889,16 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
+msgid "Products:"
+msgstr "Productos:"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/components/order_widget/order_widget.xml:0
+#: code:addons/l10n_ve_pos/static/src/overrides/screens/order_receipt/order_receipt.xml:0
+msgid "Rate:"
+msgstr "Tasa:"
