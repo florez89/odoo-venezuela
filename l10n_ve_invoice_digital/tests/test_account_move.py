@@ -842,7 +842,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = datetime.now() - timedelta(days=1)
+        # The digitization date is the user's local date (America/Caracas), so the
+        # due date must be computed in that zone: a UTC date fails 00:00-04:00 UTC.
+        local_today = fields.Datetime.context_timestamp(
+            self.invoice.with_context(tz=self.env.user.tz), fields.Datetime.now()
+        ).date()
+        self.invoice.invoice_date_due = local_today - timedelta(days=1)
 
         with self.assertRaises(UserError) as e:        
             self.invoice.generate_document_digital()
