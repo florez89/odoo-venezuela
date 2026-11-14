@@ -23,6 +23,10 @@ class PosConfigInherit(models.Model):
     access_button_mf = fields.Boolean()
     message_in_head = fields.Boolean()
 
+    @api.depends(
+        "iface_printer_id", "iface_display_id", "iface_scanner_ids", "iface_scale_id",
+        "iface_fiscal_data_module",
+    )
     def _compute_iot_device_ids(self):
         super()._compute_iot_device_ids()
         for config in self:

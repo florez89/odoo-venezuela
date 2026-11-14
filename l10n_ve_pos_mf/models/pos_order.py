@@ -19,21 +19,6 @@ class PosOrderInherit(models.Model):
     def get_order_by_uid(self, uid):
         return self.env["pos.order"].search_read([("pos_reference", "ilike", uid)])
 
-    @api.model
-    def _order_fields(self, ui_order):
-        res = super()._order_fields(ui_order)
-        res["fiscal_machine"] = ui_order.get("fiscal_machine", False)
-        res["mf_invoice_number"] = ui_order.get("mf_invoice_number", False)
-        res["mf_reportz"] = ui_order.get("mf_reportz", False)
-        return res
-
-    def _export_for_ui(self, order):
-        res = super()._export_for_ui(order)
-        res["fiscal_machine"] = order.fiscal_machine
-        res["mf_invoice_number"] = order.mf_invoice_number
-        res["mf_reportz"] = order.mf_reportz
-        return res
-
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()

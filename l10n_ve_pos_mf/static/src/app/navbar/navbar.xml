@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//CashierName" position="after">
+            <button t-if="pos.useFiscalMachine()" class="ve-mf-test btn btn-light btn-lg lh-lg" t-on-click="onClickTestFiscalMachine" title="Fiscal Machine">
+                <i class="fa fa-fw fa-print" role="img"/>
+                <span t-if="!ui.isSmall" class="ms-1">Fiscal Machine</span>
+            </button>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-burger-menu-items')]" position="inside">
+            <DropdownItem t-if="pos.config.access_button_mf and pos.useFiscalMachine()" onSelected="() => this.showFiscalReportsPopup()">
+                Fiscal Machine Reports
+            </DropdownItem>
+        </xpath>
+    </t>
+</templates>
