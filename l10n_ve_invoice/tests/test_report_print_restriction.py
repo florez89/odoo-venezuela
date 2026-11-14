@@ -2,6 +2,7 @@ from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
+from odoo.addons.l10n_ve_rate.tests.common import ensure_rate_in_force
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
@@ -12,6 +13,8 @@ class TestReportPrintRestriction(TransactionCase):
         self.company = self.env.user.company_id
         self.company.currency_id = self.env.ref('base.VEF')
         self.company.foreign_currency_id = self.env.ref('base.USD')
+        # l10n_ve_rate raises without a rate in force and a fresh database has none.
+        ensure_rate_in_force(self.env, self.company)
 
         self.account_receivable = self.env['account.account'].create({
             'name': 'Receivable', 'code': '1111111',

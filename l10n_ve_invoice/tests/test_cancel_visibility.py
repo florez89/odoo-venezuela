@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.addons.l10n_ve_rate.tests.common import ensure_rate_in_force
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestCancelVisibility(TransactionCase):
@@ -49,6 +50,8 @@ class TestCancelVisibility(TransactionCase):
         self.foreign_currency = self.env.ref('base.USD')
         self.company.currency_id = self.currency
         self.company.foreign_currency_id = self.foreign_currency
+        # l10n_ve_rate raises without a rate in force and a fresh database has none.
+        ensure_rate_in_force(self.env, self.company)
 
         self.journal_sale = self.env['account.journal'].create({
             'name': 'Sale Journal',
