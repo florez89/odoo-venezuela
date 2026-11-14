@@ -5,6 +5,14 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
+            <xpath expr="//header" position="after">
+                <div class="alert alert-warning mb-0" role="alert"
+                    invisible="not is_foreign_rate_outdated or state not in ('draft', 'sent')">
+                    The exchange rate of this order is from <field name="foreign_rate_used_date" class="oe_inline"/>,
+                    <field name="foreign_rate_age_days" class="oe_inline"/> days old. Update the exchange rates
+                    before sending it to the customer.
+                </div>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id_domain" invisible="1" />
                 <field name="filter_partner"

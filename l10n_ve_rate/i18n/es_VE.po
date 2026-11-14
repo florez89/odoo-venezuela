@@ -127,11 +127,6 @@ msgstr ""
 "confirmación para publicarse. 0 desactiva el aviso."
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
-msgid " days"
-msgstr " días"
-
-#. module: l10n_ve_rate
 #. odoo-python
 #: code:addons/l10n_ve_rate/models/res_company.py:0
 msgid "The maximum rate age cannot be negative."

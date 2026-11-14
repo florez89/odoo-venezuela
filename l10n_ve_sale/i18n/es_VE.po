@@ -529,3 +529,41 @@ msgstr ""
 #, python-format
 msgid "{}. Only has {} units of the {} demanded."
 msgstr "{}. Solo tiene {} unidades de {} exigidas."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_rate_used_date
+msgid ""
+"Date of the rate in force used by the order. Empty when its rate was set on "
+"purpose (typed by hand or frozen)."
+msgstr ""
+"Fecha de la tasa vigente usada por el pedido. Vacía cuando su tasa se "
+"fijó a propósito (escrita a mano o congelada)."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "The exchange rate of this order is from"
+msgstr "La tasa de cambio de este pedido es del"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid ""
+"days old. Update the exchange rates\n"
+"                    before sending it to the customer."
+msgstr ""
+"días de antigüedad. Actualice las tasas de cambio\n                    "
+"antes de enviarlo al cliente."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__is_foreign_rate_outdated
+msgid "Outdated Rate"
+msgstr "Tasa desactualizada"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_rate_age_days
+msgid "Rate Age (Days)"
+msgstr "Antigüedad de la tasa (días)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_rate_used_date
+msgid "Rate Used Date"
+msgstr "Fecha de la tasa usada"

@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools import format_date
 
 import logging
 
@@ -24,10 +25,11 @@ class AccountPayment(models.Model):
         "res.currency", default=default_alternate_currency
     )
 
+    # No default: a default stops the compute when the payment is created (from code or
+    # from the form), leaving the payment without rate (rate 0).
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
     )
@@ -35,9 +37,25 @@ class AccountPayment(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
+    )
+
+    foreign_rate_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_foreign_rate_age",
+        help="Date of the rate in force used by the payment. Empty when its rate "
+        "was set on purpose (typed by hand or taken from the invoice date).",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+        help="The rate is older than the company's maximum rate age: confirming "
+        "the payment from the form asks for confirmation.",
     )
 
     concept = fields.Char()
@@ -101,6 +119,53 @@ class AccountPayment(models.Model):
                 payment.foreign_currency_id.id, payment.date or fields.Date.today()
             )
             payment.update(rate_values)
+
+    @api.depends("date", "foreign_currency_id", "foreign_inverse_rate", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            # same date as _compute_rate
+            payment_date = payment.date or fields.Date.today()
+            rate_date = Rate.with_company(payment.company_id).get_rate_in_force_date(
+                payment.foreign_currency_id.id, payment_date, payment.foreign_inverse_rate
+            )
+            age = (payment_date - rate_date).days if rate_date else 0
+            limit = payment.company_id.rate_max_age_days
+            payment.foreign_rate_date = rate_date
+            payment.foreign_rate_age_days = age
+            payment.is_foreign_rate_outdated = bool(limit and age > limit)
+
+    def action_post(self):
+        # `l10n_ve_check_rate_age` comes from the form's Confirm button only:
+        # code posting payments (automatic flows) is never stopped.
+        if self.env.context.get("l10n_ve_check_rate_age") and not self.env.context.get(
+            "l10n_ve_rate_age_confirmed"
+        ):
+            if self.filtered("is_foreign_rate_outdated"):
+                return {
+                    "name": _("Outdated Exchange Rate"),
+                    "type": "ir.actions.act_window",
+                    "res_model": "account.payment.rate.age.wizard",
+                    "view_mode": "form",
+                    "target": "new",
+                    "context": {"default_payment_ids": self.ids},
+                }
+        outdated = {
+            payment: (payment.foreign_rate_date, payment.foreign_rate_age_days)
+            for payment in self
+            if payment.is_foreign_rate_outdated
+        }
+        res = super().action_post()
+        for payment, (rate_date, age) in outdated.items():
+            payment.message_post(
+                body=_(
+                    "Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days old.",
+                    user=self.env.user.name,
+                    rate_date=format_date(self.env, rate_date),
+                    age=age,
+                )
+            )
+        return res
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

@@ -1286,6 +1286,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_foreign_rate_outdated
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_foreign_rate_outdated
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_foreign_rate_outdated
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__is_foreign_rate_outdated
 msgid "Outdated Rate"
 msgstr "Tasa desactualizada"
@@ -1293,6 +1294,7 @@ msgstr "Tasa desactualizada"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
 msgid ""
 "Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days "
 "old."
@@ -1303,6 +1305,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate_age_days
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_rate_age_days
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_rate_age_days
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__foreign_rate_age_days
 msgid "Rate Age (Days)"
 msgstr "Antigüedad de la tasa (días)"
@@ -1310,6 +1313,7 @@ msgstr "Antigüedad de la tasa (días)"
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_rate_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_rate_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__foreign_rate_date
 msgid "Rate Used Date"
 msgstr "Fecha de la tasa usada"
@@ -1349,3 +1353,60 @@ msgid ""
 msgstr ""
 "días de antigüedad. Actualice las tasas de cambio\n                    "
 "o confirme que es la tasa vigente al publicar."
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_payment_rate_age_wizard
+msgid "Confirm Payment With Outdated Rate"
+msgstr "Confirmar pago con tasa desactualizada"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_rate_date
+msgid ""
+"Date of the rate in force used by the payment. Empty when its rate was set "
+"on purpose (typed by hand or taken from the invoice date)."
+msgstr ""
+"Fecha de la tasa vigente usada por el pago. Vacía cuando su tasa se "
+"fijó a propósito (escrita a mano o tomada de la fecha de la factura)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_payment_rate_age_wizard_form
+msgid "Outdated Exchange Rate"
+msgstr "Tasa de cambio desactualizada"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_payment_rate_age_wizard_form
+msgid ""
+"The exchange rate of these payments is older than the maximum allowed. Check that it is the\n"
+"                    rate in force before continuing: the confirmation is recorded in the payment history."
+msgstr ""
+"La tasa de cambio de estos pagos supera la antigüedad máxima "
+"permitida. Verifique que sea la\n                    tasa vigente antes "
+"de continuar: la confirmación queda registrada en el historial del "
+"pago."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_form_inherit_l10n_ve_accountant
+msgid "The exchange rate of this payment is from"
+msgstr "La tasa de cambio de este pago es del"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__is_foreign_rate_outdated
+msgid ""
+"The rate is older than the company's maximum rate age: confirming the "
+"payment from the form asks for confirmation."
+msgstr ""
+"La tasa supera la antigüedad máxima de la compañía: confirmar el pago "
+"desde el formulario pide confirmación."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_form_inherit_l10n_ve_accountant
+msgid ""
+"days old. Update the exchange rates\n"
+"                    or confirm that it is the rate in force when confirming."
+msgstr ""
+"días de antigüedad. Actualice las tasas de cambio\n                    "
+"o confirme que es la tasa vigente al confirmar."
+
+

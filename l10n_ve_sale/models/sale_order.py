@@ -37,11 +37,12 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
+    # No default: a default stops the compute when the order is created (from code or
+    # from the form), leaving the order without rate (rate 0).
     foreign_rate = fields.Float(
         help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         tracking=True,
@@ -50,7 +51,6 @@ class SaleOrder(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
     )
@@ -222,6 +222,38 @@ class SaleOrder(models.Model):
         created.
         """
         self._compute_rate()
+
+    foreign_rate_used_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_foreign_rate_age",
+        help="Date of the rate in force used by the order. Empty when its rate "
+        "was set on purpose (typed by hand or frozen).",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+    )
+
+    @api.depends("foreign_currency_id", "foreign_inverse_rate", "date_order", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        """Banner only: confirming an order posts nothing and its invoice takes
+        (and warns about) its own rate."""
+        Rate = self.env["res.currency.rate"]
+        for sale in self:
+            # same date as _compute_rate
+            order_date = sale.date_order.date() if sale.date_order else fields.Date.today()
+            rate_date = Rate.with_company(sale.company_id).get_rate_in_force_date(
+                sale.foreign_currency_id.id, order_date, sale.foreign_inverse_rate
+            )
+            age = (order_date - rate_date).days if rate_date else 0
+            limit = sale.company_id.rate_max_age_days
+            sale.foreign_rate_used_date = rate_date
+            sale.foreign_rate_age_days = age
+            sale.is_foreign_rate_outdated = bool(limit and age > limit)
 
     @api.depends("foreign_currency_id", "date_order")
     def _compute_rate(self):
