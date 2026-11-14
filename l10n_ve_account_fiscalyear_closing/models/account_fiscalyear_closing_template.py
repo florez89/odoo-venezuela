@@ -16,37 +16,28 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
 
     @api.onchange("l_map")
     def inchange_l_map(self):
-        accounts = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    (
-                        "account_type",
-                        "in",
-                        [
-                            "income",
-                            "expense",
-                            "income_other",
-                            "expense_depreciation",
-                            "expense_direct_cost",
-                        ],
-                    ),
-                    ("company_id", "in", [self.env.company.id, False]),
-                ]
-            )
+        company = self.template_id.company_id or self.env.company
+        Account = self.env["account.account"].sudo().with_company(company)
+        company_domain = Account._check_company_domain(company)
+        accounts = Account.search(
+            company_domain
+            + [
+                (
+                    "account_type",
+                    "in",
+                    [
+                        "income",
+                        "expense",
+                        "income_other",
+                        "expense_depreciation",
+                        "expense_direct_cost",
+                    ],
+                ),
+            ]
         )
-
-        config_a = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.env.company.id, False]),
-                ],
-                limit=1,
-            )
+        config_a = Account.search(
+            company_domain + [("account_type", "=", "equity_unaffected")],
+            limit=1,
         )
 
         maps = []
