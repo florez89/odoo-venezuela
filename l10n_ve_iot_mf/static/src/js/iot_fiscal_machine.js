@@ -27,7 +27,7 @@ function onIoTActionResult(data, notification) {
 }
 
 
-const { xml, useState } = owl;
+const { xml, useState } = owl; // eslint-disable-line no-undef
 
 export class IoTFiscalMachineComponent extends Component {
   setup() {
@@ -70,7 +70,7 @@ export class IoTFiscalMachineComponent extends Component {
 
   }
   showFailedConnection() {
-    this.dialog.add(IoTConnectionErrorDialog, { href: url });
+    this.dialog.add(IoTConnectionErrorDialog, { href: this.props.record.data.iot_ip });
   }
   get iotDevice() {
     return this.device
@@ -80,6 +80,13 @@ export class IoTFiscalMachineComponent extends Component {
    *-------------------------------------------------------*/
   not_function() {
     // Placeholder for undefined actions
+  }
+  /**
+   * Odoo 18 has no rpc service: call the model method of a call_kw endpoint
+   * with the orm service.
+   */
+  _rpcCallKw(endpoint, { model, method, args = [], kwargs = {} }) {
+    return this.orm.call(model, method, args, kwargs);
   }
   get_serial_machine() {
     if (!this.device) {
@@ -113,7 +120,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/get_data_to_payment_method", {
       model: 'iot.device',
       method: 'get_data_to_payment_method',
       args: [device],
@@ -164,7 +171,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_resume", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/get_range_resume", {
       model: 'iot.device',
       method: 'get_range_resume',
       args: [device],
@@ -192,7 +199,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/get_range_reprint", {
       model: 'iot.device',
       method: 'get_range_reprint',
       args: [device],
@@ -220,7 +227,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/get_range_reprint", {
       model: 'iot.device',
       method: 'get_range_reprint',
       args: [device],
@@ -248,7 +255,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/configure_device", {
       model: 'iot.device',
       method: 'configure_device',
       args: [device],
@@ -294,7 +301,7 @@ export class IoTFiscalMachineComponent extends Component {
 
     const device = this.props.record.resId
 
-    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_command", {
+    const request = await this._rpcCallKw("web/dataset/call_kw/iot.device/get_command", {
       model: 'iot.device',
       method: 'get_command',
       args: [device],
@@ -443,7 +450,7 @@ export class IoTFiscalMachineComponent extends Component {
 
   async call_model_method(model, method, args = [], kwargs = {}) {
     const endpoint = `web/dataset/call_kw/${model}/${method}`;
-    const response = this.env.services.rpc(endpoint, {
+    const response = this._rpcCallKw(endpoint, {
       model,
       method,
       args,
