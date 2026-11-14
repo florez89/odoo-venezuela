@@ -1783,7 +1783,10 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"
-            bill_form.journal_id = self.purchase_journal
+            # Odoo 19 hides journal_id (show_journal) when it is the only suitable
+            # journal; it is then already the default, so only set it when it differs.
+            if bill_form.journal_id != self.purchase_journal:
+                bill_form.journal_id = self.purchase_journal
             bill_form.name = "BILL-GUARD-0001"
             bill_form.correlative = "00-00000002"
             with bill_form.invoice_line_ids.new() as line:
@@ -1796,7 +1799,10 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         with Form(self.env["account.move"].with_context(default_move_type="in_refund")) as cn_form:
             cn_form.partner_id = supplier
             cn_form.invoice_date = "2026-01-15"
-            cn_form.journal_id = self.purchase_journal
+            # Odoo 19 hides journal_id (show_journal) when it is the only suitable
+            # journal; it is then already the default, so only set it when it differs.
+            if cn_form.journal_id != self.purchase_journal:
+                cn_form.journal_id = self.purchase_journal
             cn_form.name = "BILLCN-GUARD-0001"
             cn_form.correlative = "00-00000003"
             with cn_form.invoice_line_ids.new() as line:
@@ -2449,7 +2455,10 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"
-            bill_form.journal_id = self.purchase_journal
+            # Odoo 19 hides journal_id (show_journal) when it is the only suitable
+            # journal; it is then already the default, so only set it when it differs.
+            if bill_form.journal_id != self.purchase_journal:
+                bill_form.journal_id = self.purchase_journal
             bill_form.currency_id = self.usd
             # Referencia del proveedor y correlativo fiscal -- ambos
             # requeridos para facturas de proveedor (a diferencia de las
@@ -2638,7 +2647,7 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         entry_1 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2006-01-01",
+            "date": "2026-01-01",  # covered by the class rate (40 VEF/USD); a 2006 date has no rate in force
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id,
@@ -2664,7 +2673,7 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         entry_2 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2006-08-01",
+            "date": "2026-08-01",  # covered by the class rate (36 VEF/USD)
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id,
@@ -3508,7 +3517,7 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         entry_1 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2006-01-01",
+            "date": "2026-01-01",  # covered by the class rate (40 VEF/USD); a 2006 date has no rate in force
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id, "partner_id": partner.id,
@@ -3523,7 +3532,7 @@ class TestExchangeNoteReversal(ExchangeNoteCommon):
         entry_2 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2006-08-01",
+            "date": "2026-08-01",  # covered by the class rate (36 VEF/USD)
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id, "partner_id": partner.id,
