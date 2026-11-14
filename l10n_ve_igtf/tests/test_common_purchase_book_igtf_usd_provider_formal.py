@@ -76,7 +76,9 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                 "currency_id": self.currency_vef.id,
                 "foreign_currency_id": self.currency_usd.id,
                 "taxpayer_type":'formal',
-                "country_id": self.env.ref("base.us").id,
+                # Venezuela, not US: a chart-loaded company keeps VE as fiscal country, and the US taxes
+                # this fixture would create make Odoo reject any move built from line_ids (e.g. a reversal).
+                "country_id": self.env.ref("base.ve").id,
             }
         )
         
