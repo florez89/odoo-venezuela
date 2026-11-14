@@ -35,12 +35,15 @@ class StockAccountTestCommon(TransactionCase):
             "foreign_currency_id": cls.currency_usd.id,
         })
 
-        cls.env["res.currency.rate"].create({
+        # Also yesterday: users get the America/Caracas tz (l10n_ve_base), so between
+        # 00:00 and 04:00 UTC their "today" is still the server's yesterday.
+        today = fields.Date.today()
+        cls.env["res.currency.rate"].create([{
             "currency_id": cls.currency_usd.id,
             "company_id": cls.company.id,
-            "name": fields.Date.today(),
+            "name": day,
             "rate": 1.0 / 380.0,
-        })
+        } for day in (fields.Date.subtract(today, days=1), today)])
 
         cls.country_ve = cls.env.ref("base.ve")
         cls.company.account_fiscal_country_id = cls.country_ve.id
