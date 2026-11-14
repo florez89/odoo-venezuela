@@ -1,12 +1,10 @@
-# Copyright 2016 Tecnativa - Antonio Espinosa
-# Copyright 2017 Tecnativa - Pedro M. Baeza
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 import logging
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, exceptions, fields, models
+from odoo import api, exceptions, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
 
@@ -34,23 +32,23 @@ class AccountFiscalyearClosing(models.Model):
 
     name = fields.Char(
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     check_draft_moves = fields.Boolean(
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     year = fields.Integer(
         help="Introduce here the year to close. If the fiscal year is between "
         "several natural years, you have to put here the last one.",
         default=lambda self: self._default_year(),
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     company_id = fields.Many2one(
         default=lambda self: self._default_company_id(),
         readonly=True,
-        states={"draft": [("readonly", False)]},
+    )
+    chart_template = fields.Selection(
+        related="company_id.chart_template",
+        readonly=True,
     )
     state = fields.Selection(
         selection=[
@@ -70,33 +68,28 @@ class AccountFiscalyearClosing(models.Model):
         string="From date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     date_end = fields.Date(
         string="To date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     date_opening = fields.Date(
         string="Opening date",
         required=True,
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     closing_template_id = fields.Many2one(
         comodel_name="account.fiscalyear.closing.template",
         string="Closing template",
-        # domain="[('chart_template_ids', '=', chart_template_id)]",
+        domain="[('chart_template', '=', chart_template)]",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     move_config_ids = fields.One2many(
         comodel_name="account.fiscalyear.closing.config",
         inverse_name="fyc_id",
         string="Moves configuration",
         readonly=True,
-        states={"draft": [("readonly", False)]},
     )
     move_ids = fields.One2many(
         comodel_name="account.move",
@@ -105,6 +98,16 @@ class AccountFiscalyearClosing(models.Model):
         readonly=True,
     )
 
+    _sql_constraints = [
+        (
+            "year_company_uniq",
+            "unique(year, company_id)",
+            (
+                "There should be only one fiscal year closing for that year and "
+                "company!"
+            ),
+        ),
+    ]
 
     def _prepare_mapping(self, tmpl_mapping):
         self.ensure_one()
@@ -114,14 +117,14 @@ class AccountFiscalyearClosing(models.Model):
         if tmpl_mapping.dest_account:
             dest_account = self.env["account.account"].search(
                 [
-                    ("company_id", "=", self.company_id.id),
+                    ("company_ids", "in", self.company_id.ids),
                     ("code", "=ilike", tmpl_mapping.dest_account),
                 ],
                 limit=1,
             )
             # Use an error name if no destination account found
             if not dest_account:
-                name = _("No destination account '%s' found.") % (
+                name = self.env._("No destination account '%s' found.") % (
                     tmpl_mapping.dest_account,
                 )
         return {
@@ -169,7 +172,7 @@ class AccountFiscalyearClosing(models.Model):
             "name": tmpl_config.name,
             "sequence": tmpl_config.sequence,
             "code": tmpl_config.code,
-            # "inverse": tmpl_config.inverse,
+            "inverse": tmpl_config.inverse,
             "move_type": tmpl_config.move_type,
             "date": date,
             "journal_id": (
@@ -204,7 +207,7 @@ class AccountFiscalyearClosing(models.Model):
         )
         self.date_opening = fields.Date.to_string(date_end + relativedelta(days=1))
         if self.date_start != self.date_end:
-            self.name = "{}-{}".format(self.date_start, self.date_end)
+            self.name = f"{self.date_start}-{self.date_end}"
         else:
             self.name = str(self.date_end)
 
@@ -219,13 +222,11 @@ class AccountFiscalyearClosing(models.Model):
                 ]
             )
             if draft_moves:
-                msg = _("One or more draft moves found: \n")
+                msg = closing.env._("One or more draft moves found: \n")
                 for move in draft_moves:
-                    msg += "ID: {}, Date: {}, Number: {}, Ref: {}\n".format(
-                        move.id,
-                        move.date,
-                        move.name,
-                        move.ref,
+                    msg += (
+                        f"ID: {move.id}, Date: {move.date}"
+                        f", Number: {move.name}, Ref: {move.ref}\n"
                     )
                 raise ValidationError(msg)
         return True
@@ -243,7 +244,7 @@ class AccountFiscalyearClosing(models.Model):
         wizard = self.env["account.fiscalyear.closing.unbalanced.move"].create(data)
         return {
             "type": "ir.actions.act_window",
-            "name": _("Unbalanced journal entry found"),
+            "name": self.env._("Unbalanced journal entry found"),
             "view_type": "form",
             "view_mode": "form",
             "res_model": "account.fiscalyear.closing.unbalanced.move",
@@ -302,7 +303,7 @@ class AccountFiscalyearClosing(models.Model):
     def button_open_moves(self):
         # Return an action for showing moves
         return {
-            "name": _("Fiscal closing moves"),
+            "name": self.env._("Fiscal closing moves"),
             "type": "ir.actions.act_window",
             "view_type": "form",
             "view_mode": "list,form",
@@ -312,7 +313,7 @@ class AccountFiscalyearClosing(models.Model):
 
     def button_open_move_lines(self):
         return {
-            "name": _("Fiscal closing move lines"),
+            "name": self.env._("Fiscal closing move lines"),
             "type": "ir.actions.act_window",
             "view_type": "form",
             "view_mode": "list,form",
@@ -337,12 +338,12 @@ class AccountFiscalyearClosing(models.Model):
     def unlink(self):
         if any(x.state not in ("draft", "cancelled") for x in self):
             raise exceptions.UserError(
-                _(
+                self.env._(
                     "You can't remove any closing that is not in draft or "
                     "cancelled state."
                 )
             )
-        return super(AccountFiscalyearClosing, self).unlink()
+        return super().unlink()
 
 
 class AccountFiscalyearClosingConfig(models.Model):
@@ -378,7 +379,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         (
             "code_uniq",
             "unique(code, fyc_id)",
-            _("Code must be unique per fiscal year closing!"),
+            "Code must be unique per fiscal year closing!",
         ),
     ]
 
@@ -427,7 +428,7 @@ class AccountFiscalyearClosingConfig(models.Model):
             dest_totals.setdefault(dest, 0)
             src_accounts = self.env["account.account"].search(
                 [
-                    ("company_id", "=", self.fyc_id.company_id.id),
+                    ("company_ids", "in", self.fyc_id.company_id.ids),
                     ("code", "=ilike", account_map.src_accounts),
                 ],
                 order="code ASC",
@@ -537,15 +538,19 @@ class AccountFiscalyearClosingMapping(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("dest_account_id", False):
-                vals["dest_account_id"] = vals["dest_account_id"]
-        res = super(AccountFiscalyearClosingMapping, self).create(vals_list)
+            if vals.get("dest_account_id", False) and isinstance(
+                vals["dest_account_id"], list
+            ):
+                vals["dest_account_id"] = vals["dest_account_id"][0]
+        res = super().create(vals_list)
         return res
 
     def write(self, vals):
-        if vals.get("dest_account_id", False):
+        if vals.get("dest_account_id", False) and isinstance(
+            vals["dest_account_id"], list
+        ):
             vals["dest_account_id"] = vals["dest_account_id"][0]
-        res = super(AccountFiscalyearClosingMapping, self).write(vals)
+        res = super().write(vals)
         return res
 
     def dest_move_line_prepare(self, dest, balance, partner_id=False):
@@ -560,7 +565,7 @@ class AccountFiscalyearClosingMapping(models.Model):
                 "account_id": dest.id,
                 "debit": balance < 0 and -balance,
                 "credit": balance > 0 and balance,
-                "name": _("Result"),
+                "name": self.env._("Result"),
                 "date": date,
                 "partner_id": partner_id,
             }
@@ -588,6 +593,15 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "date": date,
                     "partner_id": partner_id,
                 }
+                if (
+                    account.currency_id
+                    and account.currency_id != account.company_currency_id
+                ):
+                    amount_currency = sum(account_lines.mapped("amount_currency")) * -1
+                    move_line.update(
+                        currency_id=account.currency_id.id,
+                        amount_currency=amount_currency,
+                    )
             else:
                 balance = 0
         return balance, move_line
