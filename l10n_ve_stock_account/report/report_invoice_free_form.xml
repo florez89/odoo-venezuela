@@ -8,7 +8,7 @@
             </t>
         </xpath>
 
-        <xpath expr="//div[@class='mt-5'][1]/p[2]" position="after">
+        <xpath expr="//div[hasclass('mt-5')][1]/p[2]" position="after">
             <t t-if="o.state == 'draft' or o.free_form_copy_number > 1">
                 <div class="row mt-4">
                     <div class="col-12 text-center">

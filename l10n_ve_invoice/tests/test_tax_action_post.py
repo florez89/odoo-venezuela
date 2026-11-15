@@ -1,30 +1,53 @@
 
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
+from odoo.addons.l10n_ve_rate.tests.common import ensure_rate_in_force
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestInvoiceTaxConstraint(TransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
+
+        self.currency_usd = self.env.ref("base.USD")
+        self.currency_vef = self.env.ref("base.VEF")
+        self.company.write(
+            {
+                "currency_id": self.currency_usd.id,
+                "foreign_currency_id": self.currency_vef.id,
+            }
+        )
+        # l10n_ve_rate raises without a rate in force and a fresh database has none.
+        ensure_rate_in_force(self.env, self.company)
+
         self.partner = self.env["res.partner"].create({"name": "Test customer"})
+        
+        self.account = self.env["account.account"].create({
+            "name": "Sales Journal",
+            "code": "700000",
+            "account_type": "income",
+            "company_ids": [(6, 0, [self.company.id])],
+        })
+        self.account_expense = self.env["account.account"].create({
+            "name": "Expense",
+            "code": "600099",
+            "account_type": "expense",
+            "company_ids": [(6, 0, [self.company.id])],
+        })
         self.journal = self.env["account.journal"].create({
             "name": "Sales Journal",
             "type": "sale",
             "code": "VTS",
             "company_id": self.company.id,
+            "default_account_id": self.account.id,
         })
         self.journal_purchase = self.env["account.journal"].create({
             "name": "Purchase Journal",
             "type": "purchase",
             "code": "VCP",
             "company_id": self.company.id,
-        })
-        self.account = self.env["account.account"].create({
-            "name": "Sales Journal",
-            "code": "700000",
-            "account_type": "income",
-            "company_ids": [(6, 0, [self.company.id])],
+            "default_account_id": self.account_expense.id,
         })
         self.tax = self.env["account.tax"].create({
             "name": "IVA 16%",
@@ -45,6 +68,8 @@ class TestInvoiceTaxConstraint(TransactionCase):
             "move_type": move_type,
             "partner_id": self.partner.id,
             "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_date_display": fields.Date.today(),
             "invoice_line_ids": lines,
         })
     def test_invoice_with_tax_ok(self):
@@ -75,11 +100,24 @@ class TestInvoiceTaxConstraint(TransactionCase):
             invoice.action_post()
 
     def test_invoice_with_section_and_note_lines(self):
-        """Debe ignorar líneas tipo sección y nota aunque no tengan impuesto."""
+        """Debe ignorar líneas de maquetado aunque no tengan impuesto.
+
+        Incluye `line_subsection`, el display_type que Odoo 19 agregó a esa
+        familia: era el que faltaba en la tupla de `action_post()` y hacía
+        imposible validar cualquier documento que usara una subsección. La
+        regresión también está cubierta en
+        `test_account_move_extended.py::test_action_post_does_not_demand_a_tax_on_layout_lines`,
+        pero este es el archivo dedicado a este guard y es el que abre quien
+        venga a tocarlo.
+        """
         invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "name": "Section",
                 "display_type": "line_section",
+            }),
+            (0, 0, {
+                "name": "Subsection",
+                "display_type": "line_subsection",
             }),
             (0, 0, {
                 "name": "Note",

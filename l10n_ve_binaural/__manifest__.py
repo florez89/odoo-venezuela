@@ -1,10 +1,11 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
     "name": "Venezuela - Binaural",
-    "website": "https://www.odoo.com/documentation/17.0/applications/finance/fiscal_localizations.html",
+    "website": "https://github.com/florez89/odoo-venezuela",
     "icon": "/account/static/description/l10n.png",
     "countries": ["ve"],
-    "author": "Odoo S.A., Binaural C.A",
+    "author": "Gustavo Florez, Odoo S.A., Binaural C.A.",
+    "maintainers": ["florez89"],
     "category": "Accounting/Localizations/Account Charts",
     "description": """
         Chart of Account for Venezuela.
@@ -42,5 +43,5 @@
         "demo/demo_company.xml",
     ],
     "license": "LGPL-3",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
 }

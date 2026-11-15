@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 
 class BatchRetentionsWizardLines(models.TransientModel):
     _name = "batch.retentions.wizard.lines"
+    _description = "Batch Retentions Wizard Line"
 
     wizard_id = fields.Many2one('batch.retentions.wizard',ondelete='cascade')
     

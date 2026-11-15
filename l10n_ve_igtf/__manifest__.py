@@ -16,10 +16,11 @@
     * Soporte para pagos multimoneda y validación de diarios de efectivo/banco.
     * Integración de flujos de cancelación de anticipos mediante asistente.
     """,
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.10",
+    "version": "19.0.1.2.22",
 
     "depends": [
         "base",
@@ -31,6 +32,7 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
+        "report/invoice_free_form.xml",
         "views/account_journal.xml",
         "views/account_account.xml",
         "views/account_move.xml",
@@ -46,4 +48,5 @@
         "web.assets_backend": ["l10n_ve_igtf/static/src/components/**"],
     },
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }

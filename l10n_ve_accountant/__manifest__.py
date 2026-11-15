@@ -4,10 +4,11 @@
         Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.45",
     "depends": [
         "base",
         "web",
@@ -19,7 +20,8 @@
         "l10n_ve_rate",
         "l10n_ve_contact",
         "account_invoice_pricelist",
-        "account_invoice_pricelist_sale"
+        "account_invoice_pricelist_sale",
+        "account_debit_note"
     ],
     "data": [
         "security/res_groups.xml",
@@ -52,10 +54,12 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
+        "wizard/account_payment_rate_age_wizard_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {
         "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
+        "web.assets_unit_tests": ["l10n_ve_accountant/static/tests/unit/**/*.js"],
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",

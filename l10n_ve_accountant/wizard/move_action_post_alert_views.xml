@@ -4,7 +4,12 @@
         <field name="model">move.action.post.alert.wizard</field>
         <field name="arch" type="xml">
             <form string="Validation">
-                <group>
+                <div class="alert alert-warning" role="alert" invisible="not is_foreign_rate_outdated">
+                    The exchange rate of this document is from <field name="foreign_rate_date" class="oe_inline"/>,
+                    <field name="foreign_rate_age_days" class="oe_inline"/> days old. Check that it is the rate in force
+                    before continuing: the confirmation is recorded in the document history.
+                </div>
+                <group invisible="not is_customer_invoice">
                     <span class="o_form_label" style="font-size: 14px; white-space: nowrap;">
                         Once confirmed, the system will generate the sequences and the document cannot be edited later. 
                     </span>

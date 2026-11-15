@@ -4,10 +4,11 @@
         Módulo de libro de Inventario Venezuela
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
-    "website": "https://www.binauraldev.com",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Stock / Inventory",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
     "depends": ["stock", "account","sale_stock"],
     "data": [
         "security/ir.model.access.csv",

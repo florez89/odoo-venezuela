@@ -1,3 +1,5 @@
+from odoo.tools import sql
+
 from . import controllers
 from . import models
 from . import wizard
@@ -14,7 +16,67 @@ def pre_init_hook(env):
     reassign_xml_accumulated_ids(env.cr)
     reassign_xml_tax_unit_data_ids(env.cr)
     reassign_xml_ir_rule_ids(env.cr)
-    
+    retire_binaural_payment_extension(env.cr)
+    date_existing_tax_units(env.cr)
+
+
+def date_existing_tax_units(cr):
+    """Give a historic `available_date` to tax units created before this
+    module adds the field (the l10n_ve_accountant placeholder unit).
+
+    Without it Odoo fills the new required column with the field default
+    (today), so the real unit published on the installation day collides
+    with the placeholder ("There cannot be two tax units with the same date").
+    """
+    if not sql.table_exists(cr, "tax_unit"):
+        return
+    cr.execute("ALTER TABLE tax_unit ADD COLUMN IF NOT EXISTS available_date date")
+    cr.execute("UPDATE tax_unit SET available_date = '2000-01-01' WHERE available_date IS NULL")
+
+
+def retire_binaural_payment_extension(cr):
+    """Retire binaural_payment_extension (non-homologated line) when
+    installing l10n_ve_payment_extension for the first time.
+
+    The pre/post-migrate.py files under migrations/ do NOT run on a fresh
+    module install (Odoo only runs them when the module was already
+    installed and moves to 'to upgrade' -- confirmed in
+    odoo/modules/migration.py:151-152). Since for a client of the
+    non-homologated line l10n_ve_payment_extension is a fresh install (it
+    never had l10n_ve_payment_extension installed, it had
+    binaural_payment_extension), this cleanup must live in an init hook,
+    not in a migration folder.
+
+    It deletes the views owned by binaural_payment_extension (with the
+    same inherit_id guard used by the retirements of the homologated
+    line, in case some Studio view inherits from them) and marks it
+    'to remove' so that Odoo uninstalls it at the end of this same -u.
+    """
+    cr.execute(
+        "SELECT res_id, name FROM ir_model_data "
+        "WHERE module = 'binaural_payment_extension' AND model = 'ir.ui.view'"
+    )
+    views = cr.fetchall()
+    deletable_ids = []
+    for view_id, view_name in views:
+        cr.execute("SELECT id FROM ir_ui_view WHERE inherit_id = %s", (view_id,))
+        if cr.fetchall():
+            continue  # view with children (probably Studio) -- left untouched
+        deletable_ids.append(view_id)
+
+    if deletable_ids:
+        cr.execute("DELETE FROM ir_ui_view WHERE id = ANY(%s)", (deletable_ids,))
+        cr.execute(
+            "DELETE FROM ir_model_data WHERE module = 'binaural_payment_extension' "
+            "AND model = 'ir.ui.view' AND res_id = ANY(%s)",
+            (deletable_ids,),
+        )
+
+    cr.execute(
+        "UPDATE ir_module_module SET state = 'to remove' "
+        "WHERE name = 'binaural_payment_extension' AND state = 'installed'"
+    )
+
 def reassign_xml_withholding_ids(env):
     execute_script_sql(env, "account_withholding_type_")
 

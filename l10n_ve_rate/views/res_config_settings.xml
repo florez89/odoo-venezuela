@@ -22,6 +22,12 @@
                                 </div>
                             </div>
                         </setting>
+                        <setting name="l10n_ve_rate_max_age_setting"
+                            string="Maximum Rate Age"
+                            help="Days a rate can be used before documents warn about it and ask for confirmation to be posted. 0 disables the warning.">
+                            <field name="rate_max_age_days" class="o_light_label"/>
+                            <span> days</span>
+                        </setting>
                     </block>
                 </xpath>
             </field>

@@ -1,0 +1,1247 @@
+"""Cross-account clearing move tests (transitoria -> banco/caja real).
+
+Verifies the cruce automatico in ``pos_session.py``: ``_validate_cross_move``
+(single entry point for both granularities), ``_is_cross_move_eligible``,
+``_get_cross_transitory_account``, ``_line_vals_move_cross_incoming`` /
+``_line_vals_move_cross_outgoing``, ``_create_cross_move_for`` and
+``_create_cross_move``.
+
+Spec: ``openspec/changes/l10n-ve-pos-cross-move-by-split-transactions/specs/pos-cross-account-move/spec.md``
+Spec (venta en efectivo entre transitorias, ticket 15219):
+``openspec/changes/cruce-venta-efectivo-entre-transitorias/specs/l10n_ve_pos/spec.md``
+Spec (fecha del cruce en el dia del usuario, ticket 16145):
+``openspec/specs/l10n_ve_pos/spec.md``
+"""
+
+from datetime import date
+from unittest.mock import patch
+
+from odoo import fields
+from odoo.addons.point_of_sale.models.pos_config import PosConfig as CorePosConfig
+from odoo.exceptions import UserError, ValidationError
+from odoo.tests import tagged
+from odoo.tools import SQL
+
+from .test_pos_session_accounting_common import TestPosSessionAccountingBase
+
+
+@tagged("post_install", "-at_install", "l10n_ve_pos", "cross_move")
+class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # The cross moves are dated today.
+        cls._create_rate_of_day(40.0)
+
+        # A distinct "real bank" account/journal, separate from the
+        # payment methods' own transitory account (account_bank for bank
+        # methods, account_cash for cash ones), so the cross move visibly
+        # moves value between two different accounts instead of a
+        # same-account wash.
+        cls.account_real_bank = cls.env["account.account"].create(
+            {
+                "name": "C Real Bank",
+                "code": "110001C",
+                "account_type": "asset_cash",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        manual_in = cls.env.ref("account.account_payment_method_manual_in")
+        manual_out = cls.env.ref("account.account_payment_method_manual_out")
+        cls.real_bank_journal = cls.env["account.journal"].create(
+            {
+                "name": "C Real Bank Journal",
+                "type": "bank",
+                "code": "RBJC",
+                "company_id": cls.company.id,
+                "currency_id": cls.foreign_currency.id,
+                "default_account_id": cls.account_real_bank.id,
+                "inbound_payment_method_line_ids": [
+                    (0, 0, {
+                        "payment_method_id": manual_in.id,
+                        "payment_account_id": cls.account_real_bank.id,
+                    })
+                ],
+                "outbound_payment_method_line_ids": [
+                    (0, 0, {
+                        "payment_method_id": manual_out.id,
+                        "payment_account_id": cls.account_real_bank.id,
+                    })
+                ],
+            }
+        )
+        cls.cross_account_journal = cls.env["account.journal"].create(
+            {
+                "name": "C Cross Adjustment Journal",
+                "type": "general",
+                "code": "CAJC",
+                "company_id": cls.company.id,
+            }
+        )
+
+    def _configure_cross(self, method, *, cross_account_journal=True, cross_journal=True):
+        """Wire up a payment method for the cross move.
+
+        ``is_foreign_currency`` is the only switch that arms the flow (the
+        base fixture already sets it on all four methods), so this helper
+        only has to fill in the two journals. Passing either flag as False
+        leaves that journal empty, which is the "incomplete configuration"
+        case the flow must skip in silence.
+        """
+        vals = {}
+        vals["cross_account_journal"] = self.cross_account_journal.id if cross_account_journal else False
+        vals["cross_journal"] = self.real_bank_journal.id if cross_journal else False
+        method.write(vals)
+
+    def _cross_moves(self):
+        return self.env["account.move"].search(
+            [("journal_id", "=", self.cross_account_journal.id), ("company_id", "=", self.company.id)]
+        )
+
+    def _new_session(self):
+        return self.env["pos.session"].create(
+            {
+                "config_id": self.config.id,
+                "user_id": self.env.ref("base.user_admin").id,
+            }
+        )
+
+    def _legs(self, move, transitory_account, real_account=None):
+        """Split a cross move into (real-account leg, transitory leg).
+
+        ``real_account`` defaults to ``account_real_bank`` (every
+        ``use_suspense=False`` caller: ventas). The ``use_suspense=True``
+        tests pass the journal's own suspense account instead -- see
+        ``_configure_use_suspense_accounts``.
+        """
+        real_account = real_account or self.account_real_bank
+        real_leg = move.line_ids.filtered(lambda l: l.account_id == real_account)
+        transitory_leg = move.line_ids.filtered(lambda l: l.account_id == transitory_account)
+        self.assertTrue(real_leg, "debe haber una linea sobre la cuenta real")
+        self.assertTrue(transitory_leg, "debe haber una linea sobre la cuenta transitoria")
+        return real_leg, transitory_leg
+
+    def _configure_use_suspense_accounts(self, method):
+        """Wire up dedicated suspense accounts for a ``use_suspense=True`` move.
+
+        Both legs need one: the origin journal's (``method.journal_id``,
+        cleared) and ``real_bank_journal``'s (credited/debited in place of
+        its confirmed liquidity account). Without the second, ``_get_cross_real_account``
+        resolves an empty recordset and ``account.move.create`` fails on a
+        null ``account_id`` -- this is what ``binaural_pos_close`` configures
+        implicitly via `cross_journal` in production.
+        """
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": f"C Suspense {method.name}",
+                "code": f"19{method.id:04d}C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        suspense_real = self.env["account.account"].create(
+            {
+                "name": f"C Real Bank Suspense {method.name}",
+                "code": f"18{method.id:04d}C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        method.journal_id.suspense_account_id = suspense_origin.id
+        self.real_bank_journal.suspense_account_id = suspense_real.id
+        return suspense_origin, suspense_real
+
+    # ------------------------------------------------------------------
+    # Granularidad: split_transactions decide cuantos asientos se crean
+    # ------------------------------------------------------------------
+    def test_split_method_creates_one_move_per_payment(self):
+        """split_transactions=True -> un asiento por cada pago."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        for i, amount in enumerate((58.0, 42.0, 25.0)):
+            self._create_paid_order(
+                session,
+                method=self.split_bank_method,
+                amount=amount,
+                tax_amount=8.0,
+                foreign_rate=36.5,
+                name=f"OL/CROSS/SPLIT-{i}",
+            )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 3, "split: un asiento por cada uno de los 3 pagos")
+        self.assertEqual(
+            sorted(moves.mapped(lambda m: sum(m.line_ids.mapped("debit")))),
+            [25.0, 42.0, 58.0],
+            "cada asiento lleva el importe de su propio pago",
+        )
+
+    def test_combine_method_creates_one_move_per_session(self):
+        """split_transactions=False -> UN solo asiento, neteando los pagos.
+
+        Este es el caso que reproducia el bug reportado: el metodo combine
+        recibia un asiento agregado desde ``_create_combine_account_payment``
+        MAS uno por pago desde ``_validate_cross_move``, que no filtraba por
+        ``split_transactions``. Con 3 pagos se creaban 4 asientos y activar o
+        no "Identificar cliente" no cambiaba nada.
+        """
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        for i, amount in enumerate((58.0, 42.0, 25.0)):
+            self._create_paid_order(
+                session,
+                method=self.combined_bank_method,
+                amount=amount,
+                tax_amount=8.0,
+                foreign_rate=36.5,
+                name=f"OL/CROSS/COMBINE-{i}",
+            )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "combine: un unico asiento por metodo/sesion")
+        real_leg, transitory_leg = self._legs(
+            moves, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertAlmostEqual(real_leg.debit, 125.0, places=2, msg="58 + 42 + 25")
+        self.assertAlmostEqual(transitory_leg.credit, 125.0, places=2)
+
+    def test_combine_and_split_methods_coexist_in_one_session(self):
+        """Cada metodo aplica su propia granularidad en la misma sesion."""
+        self._configure_cross(self.combined_bank_method)
+        self._configure_cross(self.split_cash_method)
+        # La venta en efectivo cruza transitoria contra transitoria, asi que
+        # el metodo cash necesita las dos cuentas configuradas para ser
+        # elegible -- ver ``_cross_move_uses_suspense``.
+        cash_suspense, _cross_suspense = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        session = self._new_session().with_company(self.company)
+        for i in range(2):
+            self._create_paid_order(
+                session,
+                method=self.combined_bank_method,
+                amount=50.0,
+                tax_amount=8.0,
+                name=f"OL/CROSS/MIX-BANK-{i}",
+            )
+            self._create_paid_order(
+                session,
+                method=self.split_cash_method,
+                amount=30.0,
+                tax_amount=4.0,
+                name=f"OL/CROSS/MIX-CASH-{i}",
+            )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(
+            len(moves), 3, "1 asiento del metodo combine + 2 del metodo split"
+        )
+        # El metodo bank vacia account_bank (su outstanding); el cash debita
+        # la transitoria de su propio diario. Contar por esa cuenta separa las
+        # dos granularidades dentro de la misma sesion.
+        bank_moves = moves.filtered(
+            lambda m: self.account_bank in m.line_ids.account_id
+        )
+        cash_moves = moves.filtered(
+            lambda m: cash_suspense in m.line_ids.account_id
+        )
+        self.assertEqual(len(bank_moves), 1, "combine: los 2 pagos bank en un solo asiento")
+        self.assertEqual(len(cash_moves), 2, "split: un asiento por cada pago cash")
+        self.assertAlmostEqual(
+            sum(bank_moves.line_ids.mapped("debit")), 100.0, places=2, msg="50 + 50"
+        )
+
+    # ------------------------------------------------------------------
+    # Direccion del asiento (signo)
+    # ------------------------------------------------------------------
+    def test_split_outgoing_refund(self):
+        """Pago split saliente (amount<0) crea el cruce espejo."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=-30.0,
+            tax_amount=-4.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/SPLIT-OUT",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves.state, "draft")
+        real_leg, transitory_leg = self._legs(
+            moves, self.split_bank_method.outstanding_account_id
+        )
+        # Espejo del caso entrante: se acredita la cuenta real y se debita
+        # la transitoria, en magnitudes absolutas.
+        self.assertAlmostEqual(real_leg.credit, abs(payment.amount), places=2)
+        self.assertAlmostEqual(real_leg.foreign_credit, abs(payment.foreign_amount), places=2)
+        self.assertAlmostEqual(transitory_leg.debit, abs(payment.amount), places=2)
+        self.assertAlmostEqual(transitory_leg.foreign_debit, abs(payment.foreign_amount), places=2)
+
+    def test_combine_net_negative_uses_outgoing_branch(self):
+        """Combine cuyo neto queda negativo produce UN asiento saliente.
+
+        La ruta combine legacy solo tenia rama entrante. Al netear los pagos
+        del metodo, un neto negativo (mas devoluciones que ventas) es
+        alcanzable y debe salir por la rama espejo.
+        """
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=40.0,
+            tax_amount=8.0,
+            name="OL/CROSS/NET-NEG-SALE",
+        )
+        self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=-100.0,
+            tax_amount=-8.0,
+            name="OL/CROSS/NET-NEG-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        real_leg, transitory_leg = self._legs(
+            moves, self.combined_bank_method.outstanding_account_id
+        )
+        self.assertAlmostEqual(real_leg.credit, 60.0, places=2, msg="|40 - 100|")
+        self.assertAlmostEqual(transitory_leg.debit, 60.0, places=2)
+
+    def test_combine_net_zero_creates_nothing(self):
+        """Combine cuyo neto es cero no crea asiento: no hay nada que cruzar."""
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/NET-ZERO-SALE",
+        )
+        self._create_paid_order(
+            session,
+            method=self.combined_bank_method,
+            amount=-58.0,
+            tax_amount=-8.0,
+            name="OL/CROSS/NET-ZERO-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 0)
+
+    # ------------------------------------------------------------------
+    # Cuenta transitoria segun el tipo de metodo
+    # ------------------------------------------------------------------
+    def test_bank_method_drains_outstanding_account(self):
+        """Metodo bank: la pata transitoria es su outstanding_account_id."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/BANK-IN",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves.state, "draft", "el cruce nunca se postea automaticamente")
+        real_leg, transitory_leg = self._legs(moves, self.account_bank)
+        self.assertEqual(
+            self.split_bank_method.outstanding_account_id,
+            self.account_bank,
+            "fixture: el metodo bank si tiene outstanding_account_id",
+        )
+        self.assertAlmostEqual(real_leg.debit, payment.amount, places=2)
+        self.assertAlmostEqual(real_leg.foreign_debit, payment.foreign_amount, places=2)
+        self.assertTrue(real_leg.not_foreign_recalculate)
+        self.assertAlmostEqual(transitory_leg.credit, payment.amount, places=2)
+        self.assertAlmostEqual(transitory_leg.foreign_credit, payment.foreign_amount, places=2)
+        self.assertTrue(transitory_leg.not_foreign_recalculate)
+
+    def test_cash_sale_moves_between_both_suspense_accounts(self):
+        """Venta en efectivo: transitoria del metodo -> transitoria del cruce.
+
+        El efectivo de la sesion ya sale de la cuenta del diario del metodo
+        por la SALIDA DE EFECTIVO que el cajero registra al cerrar: el
+        ``try_cash_in_out`` nativo acredita ``journal_id.default_account_id``
+        y deja el importe en ``journal_id.suspense_account_id``. Si el cruce
+        tambien acreditara esa cuenta quedaria drenada dos veces, y las dos
+        transitorias cargadas sin nada que las compense. Por eso la venta en
+        efectivo va por ``use_suspense=True`` -- ver
+        ``_cross_move_uses_suspense``. Ticket 15219.
+
+        ``outstanding_account_id`` sigue vacio en un metodo cash
+        (``point_of_sale/views/pos_payment_method_views.xml:24``,
+        ``invisible="type != 'bank'"``), asi que no hay otra cuenta candidata.
+        """
+        self.assertFalse(
+            self.split_cash_method.outstanding_account_id,
+            "fixture must mirror production: cash methods never have outstanding_account_id",
+        )
+        self._configure_cross(self.split_cash_method)
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/CASH",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+
+        origin_leg = moves.line_ids.filtered(
+            lambda l: l.account_id == suspense_origin
+        )
+        cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
+        self.assertTrue(origin_leg, "falta la pata de la transitoria del diario del metodo")
+        self.assertTrue(cross_leg, "falta la pata de la transitoria del diario afectado")
+
+        self.assertAlmostEqual(origin_leg.debit, payment.amount, places=2)
+        self.assertAlmostEqual(origin_leg.foreign_debit, payment.foreign_amount, places=2)
+        self.assertAlmostEqual(origin_leg.credit, 0.0, places=2)
+        self.assertTrue(origin_leg.not_foreign_recalculate)
+
+        self.assertAlmostEqual(cross_leg.credit, payment.amount, places=2)
+        self.assertAlmostEqual(cross_leg.foreign_credit, payment.foreign_amount, places=2)
+        self.assertAlmostEqual(cross_leg.debit, 0.0, places=2)
+        self.assertTrue(cross_leg.not_foreign_recalculate)
+
+        self.assertFalse(
+            moves.line_ids.filtered(lambda l: l.account_id == self.account_cash),
+            "la cuenta del diario del metodo la limpia la salida de efectivo, "
+            "no el cruce",
+        )
+        self.assertFalse(
+            moves.line_ids.filtered(lambda l: l.account_id == self.account_real_bank),
+            "la liquidez real del diario afectado no entra en el cruce de la venta",
+        )
+        self.assertFalse(
+            moves.line_ids.filtered(lambda l: l.account_id == self.account_pos_receivable),
+            "la POS receivable ya quedo saldada por el statement line nativo: "
+            "el cruce no debe tocarla",
+        )
+
+    def test_cash_sale_net_negative_mirrors_the_entry(self):
+        """Neto negativo en efectivo: el asiento entre transitorias se invierte."""
+        self._configure_cross(self.combined_cash_method)
+        suspense_origin, suspense_cross = self._configure_use_suspense_accounts(
+            self.combined_cash_method
+        )
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.combined_cash_method,
+            amount=40.0,
+            tax_amount=8.0,
+            name="OL/CROSS/CASH-NET-NEG-SALE",
+        )
+        self._create_paid_order(
+            session,
+            method=self.combined_cash_method,
+            amount=-100.0,
+            tax_amount=-8.0,
+            name="OL/CROSS/CASH-NET-NEG-REFUND",
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        origin_leg = moves.line_ids.filtered(
+            lambda l: l.account_id == suspense_origin
+        )
+        cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
+        self.assertAlmostEqual(origin_leg.credit, 60.0, places=2, msg="|40 - 100|")
+        self.assertAlmostEqual(cross_leg.debit, 60.0, places=2)
+        self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
+        self.assertAlmostEqual(cross_leg.credit, 0.0, places=2)
+        self.assertGreater(
+            origin_leg.foreign_credit, 0.0, "el alterno tambien se invierte"
+        )
+        self.assertGreater(cross_leg.foreign_debit, 0.0)
+        self.assertFalse(
+            moves.line_ids.filtered(
+                lambda l: l.account_id in (self.account_cash, self.account_real_bank)
+            ),
+            "tampoco en el espejo entran la cuenta del diario ni la liquidez real",
+        )
+
+    def test_cash_sale_skipped_when_journal_has_no_suspense_account(self):
+        """Sin Cuenta transitoria en el diario, el metodo cash se omite con un aviso en el log.
+
+        Es la misma degradacion que ya aplicaba a un metodo sin diarios de
+        cruce: configuracion incompleta, no error. El cierre de sesion no
+        puede caerse por esto.
+        """
+        self._configure_cross(self.split_cash_method)
+        self.assertFalse(
+            self.split_cash_method.journal_id.suspense_account_id,
+            "fixture: el diario de caja no trae suspense",
+        )
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/CASH-NO-SUSPENSE",
+        )
+
+        with self.assertLogs("odoo.addons.l10n_ve_pos.models.pos_session", "WARNING"):
+            session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 0)
+
+    def test_cash_sale_skipped_when_cross_journal_has_no_suspense_account(self):
+        """Falta la transitoria del DESTINO: se omite, no revienta el cierre.
+
+        Es el lado que no cubria el guard original. Sin el, la pata destino
+        sale con ``account_id = False`` y el insert viola
+        ``account_move_line_check_accountable_required_fields`` dentro de
+        ``action_pos_session_close``, tumbando el cierre de la sesion.
+        """
+        self._configure_cross(self.split_cash_method)
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": "C Only Origin Suspense",
+                "code": "197777C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
+        self.assertFalse(
+            self.real_bank_journal.suspense_account_id,
+            "fixture: el diario afectado se queda sin transitoria a proposito",
+        )
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/CASH-NO-DEST-SUSPENSE",
+        )
+
+        with self.assertLogs("odoo.addons.l10n_ve_pos.models.pos_session", "WARNING"):
+            session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 0)
+
+    def test_cash_sale_emits_the_move_even_when_both_suspense_accounts_match(self):
+        """Las dos transitorias en la misma cuenta: el asiento se emite igual.
+
+        Es la configuracion POR DEFECTO de Odoo --
+        ``account_journal._compute_suspense_account_id`` cae en
+        ``company.account_journal_suspense_account_id`` y el plan contable se
+        la asigna a todo diario cash/bank. El asiento queda sin efecto
+        contable, y eso es lo buscado: delata la configuracion incompleta en
+        vez de esconderla, igual que ya hace el cruce del cash in/out.
+        Decision del ticket 15219.
+        """
+        self._configure_cross(self.split_cash_method)
+        shared_suspense = self.env["account.account"].create(
+            {
+                "name": "C Shared Suspense",
+                "code": "196666C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = shared_suspense.id
+        self.real_bank_journal.suspense_account_id = shared_suspense.id
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/CASH-SHARED-SUSPENSE",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "el asiento se crea aunque no mueva nada")
+        legs = moves.line_ids.filtered(lambda l: l.account_id == shared_suspense)
+        self.assertEqual(len(legs), 2, "las dos patas caen en la misma cuenta")
+        self.assertAlmostEqual(sum(legs.mapped("debit")), payment.amount, places=2)
+        self.assertAlmostEqual(sum(legs.mapped("credit")), payment.amount, places=2)
+
+    # ------------------------------------------------------------------
+    # Modo use_suspense (llamadores fuera de ventas -- ver binaural_pos_close)
+    # ------------------------------------------------------------------
+    def test_use_suspense_incoming_uses_both_suspense_accounts(self):
+        """``use_suspense=True``, entrada: ninguna pata usa las cuentas de
+        ``use_suspense=False`` (``default_account_id`` / ``payment_account_id``
+        de ``cross_journal``) -- ambas caen en el ``suspense_account_id`` de
+        su propio diario.
+
+        Usado por ``binaural_pos_close.try_cash_in_out``: ese flujo nunca fija
+        ``counterpart_account_id`` en su linea de extracto, asi que la nativa
+        cae en ``journal_id.suspense_account_id``, no en ``default_account_id``
+        -- ese es el saldo que este modo debe drenar. Se llama directo a
+        ``_create_cross_move_for`` con importes planos, sin pasar por
+        ``try_cash_in_out`` (vive en otro modulo).
+        """
+        suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=58.0,
+            foreign_amount=58.0 * 36.5,
+            foreign_rate=36.5,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="use_suspense incoming",
+            use_suspense=True,
+        )
+
+        self.assertEqual(move.state, "draft")
+        real_leg, transitory_leg = self._legs(
+            move, suspense_origin, real_account=suspense_real
+        )
+        self.assertFalse(
+            move.line_ids.filtered(lambda l: l.account_id == self.account_cash),
+            "default_account_id no debe aparecer: ese saldo ya lo drena el "
+            "cruce use_suspense=False (ventas), este es un saldo distinto",
+        )
+        self.assertFalse(
+            move.line_ids.filtered(lambda l: l.account_id == self.account_real_bank),
+            "tampoco la cuenta de liquidez confirmada de cross_journal",
+        )
+        # Polaridad invertida respecto a use_suspense=False: suspense_account_id
+        # recibe siempre el lado nativo opuesto a default_account_id para el
+        # mismo movimiento, asi que limpiarla debita la transitoria (no la
+        # acredita) y acredita la real (no la debita).
+        self.assertAlmostEqual(transitory_leg.debit, 58.0, places=2)
+        self.assertAlmostEqual(transitory_leg.foreign_debit, 58.0 * 36.5, places=2)
+        self.assertAlmostEqual(real_leg.credit, 58.0, places=2)
+        self.assertAlmostEqual(real_leg.foreign_credit, 58.0 * 36.5, places=2)
+
+    def test_use_suspense_outgoing_mirrors_incoming(self):
+        """``use_suspense=True``, salida (``amount<0``): espejo exacto de la
+        entrada -- se debita la real y se acredita la transitoria."""
+        suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            foreign_amount=-25.0 * 36.5,
+            foreign_rate=36.5,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="use_suspense outgoing",
+            use_suspense=True,
+        )
+
+        real_leg, transitory_leg = self._legs(
+            move, suspense_origin, real_account=suspense_real
+        )
+        self.assertAlmostEqual(transitory_leg.credit, 25.0, places=2)
+        self.assertAlmostEqual(real_leg.debit, 25.0, places=2)
+
+    def test_use_suspense_eligibility_requires_both_suspense_accounts(self):
+        """``_is_cross_move_eligible(..., use_suspense=True)`` exige la
+        ``suspense_account_id`` de LOS DOS diarios -- el del metodo y el
+        ``cross_journal`` --, mientras que a ``use_suspense=False`` (cruce de
+        banco, diferencias de cierre) le basta con ``default_account_id``
+        resuelto."""
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        self.assertFalse(
+            self.split_cash_method.journal_id.suspense_account_id,
+            "fixture: sin configurar todavia",
+        )
+        self.assertTrue(
+            session._is_cross_move_eligible(self.split_cash_method),
+            "use_suspense=False (cruce de banco, diferencias) ya es elegible "
+            "con default_account_id resuelto",
+        )
+        self.assertFalse(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "use_suspense=True no es elegible sin suspense_account_id en el diario",
+        )
+
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": "C Eligibility Suspense",
+                "code": "199999C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
+        self.assertFalse(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "con el origen configurado pero el destino vacio sigue sin ser "
+            "elegible: esa pata saldria con account_id = False y tumbaria el "
+            "cierre de la sesion",
+        )
+
+        suspense_destination = self.env["account.account"].create(
+            {
+                "name": "C Eligibility Suspense Destination",
+                "code": "198888C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.real_bank_journal.suspense_account_id = suspense_destination.id
+        self.assertTrue(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "con las dos transitorias configuradas si es elegible",
+        )
+
+    # ------------------------------------------------------------------
+    # Elegibilidad
+    # ------------------------------------------------------------------
+    def test_no_cross_move_when_not_foreign_currency(self):
+        """is_foreign_currency=False no crea cruce aunque tenga los diarios.
+
+        ``is_foreign_currency`` es el unico interruptor del flujo desde que
+        se retiro ``apply_one_cross_move``.
+        """
+        self._configure_cross(self.split_bank_method)
+        self.split_bank_method.write({"is_foreign_currency": False})
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/NOT-FOREIGN",
+        )
+
+        session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 0)
+
+    def test_no_cross_move_when_journal_missing(self):
+        """Falta un diario de cruce: no crea nada ni rompe."""
+        for missing in ("cross_account_journal", "cross_journal"):
+            with self.subTest(missing=missing):
+                # Odoo bloquea escribir sobre un pos.payment.method mientras
+                # tenga una sesion abierta -- configurar ANTES de abrir la
+                # sesion de esta iteracion.
+                self._configure_cross(
+                    self.split_bank_method,
+                    cross_account_journal=(missing != "cross_account_journal"),
+                    cross_journal=(missing != "cross_journal"),
+                )
+                session = self._new_session().with_company(self.company)
+                self._create_paid_order(
+                    session,
+                    method=self.split_bank_method,
+                    amount=58.0,
+                    tax_amount=8.0,
+                    name=f"OL/CROSS/MISSING-{missing}",
+                )
+
+                session._validate_cross_move()
+
+                self.assertEqual(len(self._cross_moves()), 0)
+
+                # Liberar la sesion (sin pasar por el cierre real) para que
+                # la siguiente iteracion pueda reconfigurar el metodo y abrir
+                # una sesion nueva sobre el mismo pos.config.
+                session.write({"state": "closed"})
+
+    def test_pay_later_method_is_not_eligible(self):
+        """Un metodo pay_later nunca cruza: no hay transitoria que vaciar.
+
+        El guard no es redundante: un pay_later no tiene ``journal_id``, asi
+        que ``_get_cross_transitory_account`` caeria en el fallback de la POS
+        receivable y lo daria por elegible sin este chequeo explicito.
+        """
+        pay_later_method = self.env["pos.payment.method"].create(
+            {
+                "name": "C Pay Later",
+                "is_cash_count": False,
+                "split_transactions": False,
+                "company_id": self.company.id,
+                "journal_id": False,
+                "is_foreign_currency": True,
+                "cross_account_journal": self.cross_account_journal.id,
+                "cross_journal": self.real_bank_journal.id,
+            }
+        )
+        self.assertEqual(pay_later_method.type, "pay_later")
+        session = self._new_session().with_company(self.company)
+
+        self.assertFalse(session._is_cross_move_eligible(pay_later_method))
+        self.assertTrue(
+            session._get_cross_transitory_account(pay_later_method),
+            "el fallback si resuelve una cuenta: lo que excluye al metodo es el tipo",
+        )
+
+    # ------------------------------------------------------------------
+    # Regresiones ya cubiertas antes de este refactor
+    # ------------------------------------------------------------------
+    def test_cross_move_name_takes_journal_sequence_on_post(self):
+        """El asiento toma la secuencia de `cross_account_journal` al postearse.
+
+        Antes del fix, `name` se fijaba con el literal "PoS Payment Method
+        Adjustment" en el ``create()`` del ``account.move`` -- eso bloquea
+        para siempre la asignacion nativa de secuencia
+        (``_compute_name``/``_set_next_sequence`` solo corren cuando
+        ``name`` esta vacio o es '/'). El texto descriptivo ahora va en
+        ``ref``, dejando ``name`` libre para que Odoo lo asigne al postear.
+        """
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/SEQUENCE",
+        )
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertIn(
+            move.name,
+            (False, "/"),
+            "en draft, name debe quedar vacio/'/' -- Odoo aun no asigno secuencia",
+        )
+        original_ref = move.ref
+        self.assertTrue(
+            original_ref.startswith("PoS Payment Method Adjustment"),
+            "el texto descriptivo vive en ref, no en name",
+        )
+
+        move.action_post()
+
+        self.assertTrue(
+            move.name and move.name != "/",
+            "al postear, Odoo debe asignar la secuencia del diario cross_account_journal",
+        )
+        self.assertNotIn(
+            "PoS Payment Method Adjustment",
+            move.name or "",
+            "name NO debe quedar congelado con el literal viejo",
+        )
+        self.assertEqual(move.ref, original_ref, "ref se preserva tras postear")
+
+    # ------------------------------------------------------------------
+    # Trazabilidad: distinguir los borradores entre si
+    # ------------------------------------------------------------------
+    def test_split_refs_identify_each_payment_of_the_same_order(self):
+        """Dos pagos del MISMO metodo en la MISMA orden dan refs distintos.
+
+        Con granularidad split cada pago genera su propio borrador, todos con
+        la misma fecha, mismo diario y (si los importes coinciden) mismo
+        importe. Si el ref se quedara en el nombre de la orden, una orden
+        pagada en dos partes con el mismo metodo produciria dos borradores
+        identicos e inauditables -- por eso el ref baja hasta el pago.
+        """
+        self._configure_cross(self.split_cash_method)
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=50.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/TWO-PAYMENTS",
+        )
+        # Segundo pago del mismo metodo sobre la misma orden, mismo importe:
+        # el peor caso para distinguirlos.
+        order.add_payment(
+            {
+                "name": "",
+                "pos_order_id": order.id,
+                "amount": 50.0,
+                "payment_method_id": self.split_cash_method.id,
+                "payment_date": order.date_order,
+                "foreign_rate": 36.5,
+                "foreign_amount": 50.0 * 36.5,
+            }
+        )
+        self.assertEqual(len(order.payment_ids), 2)
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 2, "un borrador por cada pago")
+        refs = moves.mapped("ref")
+        self.assertEqual(len(set(refs)), 2, f"los refs deben distinguirse: {refs}")
+        for ref in refs:
+            self.assertIn(order.name, ref, "el ref nombra la orden")
+
+    def test_split_move_header_carries_the_partner(self):
+        """El borrador split lleva el socio en la cabecera, no solo en las lineas.
+
+        En la lista de asientos la columna Socio lee `account.move.partner_id`;
+        sin esto sale vacia y el contador no puede saber de que cliente es cada
+        borrador sin abrirlo.
+        """
+        partner = self.env["res.partner"].create(
+            {"name": "C Cross Customer", "company_id": False}
+        )
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/PARTNER",
+            partner_id=partner.id,
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves.partner_id, partner)
+
+    def test_partner_from_another_company_does_not_block_the_cross_move(self):
+        """Un cliente de otra compania no debe tumbar el cierre de sesion.
+
+        `account.move.partner_id` es check_company=True mientras que
+        `account.move.line.partner_id` no lo es, y `pos.order.partner_id` no
+        tiene chequeo de compania -- Odoo acepta una orden cuyo cliente es de
+        otra compania. Propagarlo a la cabecera lanzaria UserError y
+        bloquearia el cierre completo, a cambio de una simple mejora de
+        legibilidad. En ese caso la cabecera va sin socio, pero el asiento se
+        crea igual y las lineas conservan el partner.
+        """
+        other_company = self.env["res.company"].create({"name": "C Other Co"})
+        foreign_partner = self.env["res.partner"].create(
+            {"name": "C Foreign Customer", "company_id": other_company.id}
+        )
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/FOREIGN-PARTNER",
+            partner_id=foreign_partner.id,
+        )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "el cruce se crea igual, no revienta")
+        self.assertFalse(
+            moves.partner_id, "la cabecera va sin socio para no violar check_company"
+        )
+        self.assertEqual(
+            moves.line_ids.partner_id,
+            foreign_partner,
+            "las lineas si conservan el partner: no tienen check_company",
+        )
+
+    def test_combine_move_ref_names_the_session_and_has_no_partner(self):
+        """El borrador combine referencia la sesion y no lleva socio.
+
+        Agrupa pagos de varios clientes, asi que fijar uno en la cabecera
+        seria enganoso -- mismo criterio que el account.payment combinado
+        nativo, que tampoco lleva partner.
+        """
+        self._configure_cross(self.combined_bank_method)
+        session = self._new_session().with_company(self.company)
+        for i in range(2):
+            self._create_paid_order(
+                session,
+                method=self.combined_bank_method,
+                amount=50.0,
+                tax_amount=8.0,
+                name=f"OL/CROSS/COMBINE-REF-{i}",
+            )
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1)
+        self.assertIn(session.name, moves.ref)
+        self.assertFalse(moves.partner_id, "combine agrupa varios clientes: sin socio")
+
+    def test_amount_currency_uses_configured_foreign_currency_not_hardcoded_id(self):
+        """Regresion del bug `currency == 3`: usa self.foreign_currency_id, no un id fijo.
+
+        Configura el cross_journal con la moneda de la COMPANIA (no la
+        foranea) explicitamente. Si el codigo comparara contra un id
+        hardcodeado en vez de contra `self.foreign_currency_id`, esta
+        distincion se perderia silenciosamente.
+        """
+        self._configure_cross(self.split_bank_method)
+        self.real_bank_journal.currency_id = self.company.currency_id
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_bank_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/CURRENCY",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        real_bank_line = move.line_ids.filtered(
+            lambda l: l.account_id == self.account_real_bank
+        )
+        # La linea de la cuenta real vive en la moneda de la compania
+        # (no la foranea): amount_currency debe ser payment.amount, no
+        # payment.foreign_amount.
+        self.assertAlmostEqual(real_bank_line.amount_currency, payment.amount, places=2)
+        self.assertNotAlmostEqual(
+            real_bank_line.amount_currency, payment.foreign_amount, places=2
+        )
+
+    # ------------------------------------------------------------------
+    # Cuentas que necesita el cruce (TA 83148, H6)
+    # ------------------------------------------------------------------
+    def _clear_cross_journal_payment_accounts(self, direction):
+        """Vacia la cuenta de las lineas de pago de ``real_bank_journal``.
+
+        Se escribe por SQL: ``l10n_ve_accountant``
+        (``_check_payment_account_id_required_for_bank``) ya no deja vaciarla
+        por el ORM en un diario de banco. El chequeo del cruce sigue cubriendo
+        las lineas que quedaron sin cuenta antes de esa restriccion o que se
+        crearon en ``install_mode``; esto simula esos datos. Un diario de
+        efectivo del core ya nace con estas lineas sin cuenta.
+        """
+        journal = self.real_bank_journal
+        lines = (
+            journal.inbound_payment_method_line_ids
+            if direction == "inbound"
+            else journal.outbound_payment_method_line_ids
+        )
+        self.env.flush_all()
+        self.env.cr.execute(
+            SQL(
+                "UPDATE account_payment_method_line SET payment_account_id = NULL WHERE id IN %s",
+                tuple(lines.ids),
+            )
+        )
+        lines.invalidate_recordset(["payment_account_id"])
+
+    def test_open_check_requires_cross_journal_payment_accounts(self):
+        """Abrir la sesion exige la cuenta de las lineas de pago del
+        ``cross_journal``: sin ella, la diferencia de apertura del cajon
+        foraneo creaba una pata sin cuenta y la apertura reventaba con
+        ``account_move_line_check_accountable_required_fields``."""
+        self.config._check_cross_move_accounts()  # sin cruce configurado: nada que exigir
+        self._configure_cross(self.split_bank_method)
+        self.config._check_cross_move_accounts()
+        for direction in ("inbound", "outbound"):
+            with self.subTest(direction=direction), self.env.cr.savepoint() as savepoint:
+                self._clear_cross_journal_payment_accounts(direction)
+                with self.assertRaises(ValidationError) as error:
+                    self.config._check_cross_move_accounts()
+                message = str(error.exception)
+                self.assertIn(self.split_bank_method.name, message)
+                self.assertIn(self.real_bank_journal.name, message)
+                cleared, kept = (
+                    ("incoming", "outgoing") if direction == "inbound" else ("outgoing", "incoming")
+                )
+                self.assertIn(f"{cleared} payments account", message)
+                self.assertNotIn(f"{kept} payments account", message)
+                savepoint.rollback()
+
+    def test_open_check_cash_method_does_not_require_payment_accounts(self):
+        """La venta en efectivo cruza entre transitorias: este modulo no usa
+        las lineas de pago del ``cross_journal`` de un metodo de efectivo y no
+        las exige (si las usa otro modulo, como la diferencia del cajon
+        foraneo de ``binaural_pos_close``, las exige el)."""
+        self._configure_cross(self.split_cash_method)
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        for direction in ("inbound", "outbound"):
+            self._clear_cross_journal_payment_accounts(direction)
+        self.config._check_cross_move_accounts()
+
+    def test_open_check_requires_suspense_accounts_for_cash(self):
+        """Un metodo de efectivo cruza entre las transitorias de sus dos
+        diarios: abrir la sesion las exige. Un metodo de banco no las usa."""
+        self._configure_cross(self.split_bank_method)
+        self.config._check_cross_move_accounts()  # banco: no exige transitorias
+
+        self._configure_cross(self.split_cash_method)
+        with self.assertRaises(ValidationError) as error:
+            self.config._check_cross_move_accounts()
+        message = str(error.exception)
+        self.assertIn(self.split_cash_method.name, message)
+        self.assertIn(self.split_cash_method.journal_id.name, message)
+        self.assertIn(self.real_bank_journal.name, message)
+
+        suspense_origin, _suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self.config._check_cross_move_accounts()
+
+        self.real_bank_journal.suspense_account_id = False
+        with self.assertRaises(ValidationError) as error:
+            self.config._check_cross_move_accounts()
+        self.assertIn(self.real_bank_journal.name, str(error.exception))
+        self.assertNotIn(
+            self.split_cash_method.journal_id.name,
+            str(error.exception),
+            "solo se lista la cuenta que falta",
+        )
+
+    def test_check_before_creating_new_session_runs_cross_check(self):
+        """El chequeo va en ``_check_before_creating_new_session``, junto a
+        los del core (``_check_profit_loss_cash_journal``…): se ejecuta antes
+        de crear la sesion, asi que el cajero ni llega al popup de apertura."""
+        self._configure_cross(self.split_bank_method)
+        self._clear_cross_journal_payment_accounts("inbound")
+        with patch.object(CorePosConfig, "_check_before_creating_new_session", return_value=None):
+            with self.assertRaises(ValidationError):
+                self.config._check_before_creating_new_session()
+
+    def test_cross_move_without_payment_account_raises_clear_error(self):
+        """Red de seguridad para una sesion ya creada cuando se vacio la
+        cuenta: un error legible en vez del ``CheckViolation`` de SQL."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        for direction, amount in (("inbound", 10.0), ("outbound", -10.0)):
+            with self.subTest(direction=direction), self.env.cr.savepoint() as savepoint:
+                self._clear_cross_journal_payment_accounts(direction)
+                with self.assertRaises(UserError) as error:
+                    session._create_cross_move_for(
+                        self.split_bank_method,
+                        amount=amount,
+                        foreign_amount=amount * 36.5,
+                        foreign_rate=36.5,
+                        partner=self.env["res.partner"],
+                        date=fields.Datetime.now(),
+                        ref="H6",
+                    )
+                self.assertIn(self.real_bank_journal.name, str(error.exception))
+                savepoint.rollback()
+        self.assertFalse(self._cross_moves())
+
+    # ------------------------------------------------------------------
+    # Fecha del cruce: el dia del usuario, no el dia UTC (ticket 16145)
+    # ------------------------------------------------------------------
+    # 2026-03-11 00:30 UTC == 2026-03-10 20:30 en Caracas (UTC-4): el servidor
+    # ya esta en el dia siguiente, que todavia no tiene tasa.
+    NIGHT_UTC = "2026-03-11 00:30:00"
+    CARACAS_DAY = date(2026, 3, 10)
+
+    def _night_session(self, method):
+        """Sesion de un cajero en Caracas con una venta en ``method`` y tasa
+        cargada solo para el dia local: el dia UTC no la tiene."""
+        self.env["res.currency.rate"].create(
+            {
+                "name": self.CARACAS_DAY,
+                "currency_id": self.foreign_currency.id,
+                "company_id": self.company.id,
+                "rate": 40.0,
+            }
+        )
+        self._configure_cross(method)
+        self._configure_use_suspense_accounts(method)
+        session = (
+            self._new_session()
+            .with_company(self.company)
+            .with_context(tz="America/Caracas")
+        )
+        self._create_paid_order(
+            session,
+            method=method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/NIGHT",
+        )
+        return session
+
+    def test_combine_cross_move_closed_at_night_takes_the_user_day(self):
+        """Cierre a las 8:30 pm de Caracas: el cruce queda del dia local.
+
+        El metodo agrupado se fecha con ``stop_at``, que es un Datetime en
+        UTC. ``account.move.date`` es Date y lo truncaba con ``.date()`` al
+        dia UTC (el siguiente): ``l10n_ve_accountant`` pedia la tasa de ese
+        dia, que no existe, y el cierre se detenia con "No hay una tasa
+        asignada para USD al <manana>" (Nova, sesion AV. VICTORIA/00029).
+        """
+        session = self._night_session(self.combined_cash_method)
+        session.stop_at = self.NIGHT_UTC
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(
+            move.date,
+            self.CARACAS_DAY,
+            "el cruce del cierre va en el dia del cajero, no en el dia UTC",
+        )
+
+    def test_split_cross_move_paid_at_night_takes_the_user_day(self):
+        """Pago registrado a las 8:30 pm de Caracas en un metodo con
+        "Identificar cliente": su cruce, fechado con el ``create_date`` del
+        pago (UTC), tambien queda del dia local."""
+        session = self._night_session(self.split_cash_method)
+        payment = session.order_ids.payment_ids
+        self.env.cr.execute(
+            SQL(
+                "UPDATE pos_payment SET create_date = %s WHERE id = %s",
+                self.NIGHT_UTC,
+                payment.id,
+            )
+        )
+        payment.invalidate_recordset(["create_date"])
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(move.date, self.CARACAS_DAY)

@@ -12,6 +12,7 @@ _logger = logging.getLogger(__name__)
 
 class ReportPaymentPos(models.AbstractModel):
     _name = "report.l10n_ve_pos.payment_report_pos"
+    _description = "POS Payment Report"
 
     def get_datetime_tz(self, datetime):
         # get tz or by default

@@ -27,9 +27,10 @@ class L10nVePrestacionesLedger(models.Model):
         ('posted', 'Publicado')
     ], string='Estado', default='draft', required=True)
 
-    _sql_constraints = [
-        ('employee_date_unique', 'unique(employee_id, date)', 'Ya existe un registro en el libro auxiliar para este empleado en este mes.')
-    ]
+    _employee_date_unique = models.Constraint(
+        'unique(employee_id, date)',
+        'Ya existe un registro en el libro auxiliar para este empleado en este mes.',
+    )
 
     @api.model_create_multi
     def create(self, vals_list):

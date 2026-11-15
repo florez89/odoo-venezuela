@@ -93,12 +93,6 @@ msgid "Advance Supplier Account"
 msgstr "Cuenta de anticipo de proveedores"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
-msgid "Amount with IGTF"
-msgstr "Monto IGTF"
-
-#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_without_difference
 msgid "Amount without Difference"
 msgstr "Monto sin IGTF"
@@ -545,8 +539,8 @@ msgstr "Mostrar diferencia de pago"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid "Show in Invoice"
-msgstr "Mostrar en factura"
+msgid "Show IGTF to be received"
+msgstr "Mostrar IGTF a percibir"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
@@ -555,8 +549,8 @@ msgstr "Mostrar en Ordenes de Venta"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid "Show suggestion based on total amount of the Invoice"
-msgstr "Mostrar sugerido basado en el monto total de la factura"
+msgid "Show IGTF to be received freely from customer invoices"
+msgstr "Mostrar IGTF a percibir en forma libre de facturas de clientes "
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
@@ -770,3 +764,37 @@ msgstr "créditos y anticipos pendientes"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
 msgid "outstanding debits and advances"
 msgstr "débitos y anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid ""
+"The advance payment cross entry %s cannot be reset to draft or cancelled by "
+"itself. Unreconcile it from the invoice, or reset to draft or cancel its "
+"origin payment."
+msgstr ""
+"El asiento de cruce de anticipo %s no puede pasarse a borrador ni cancelarse "
+"por sí solo. Desconcílialo desde la factura, o pasa a borrador o cancela su "
+"pago origen."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid ""
+"The advance payment cross entry %s has no origin payment, so it cannot be "
+"posted."
+msgstr ""
+"El asiento de cruce de anticipo %s no tiene pago origen, por lo que no puede "
+"publicarse."
+
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_to_show
+msgid "IGTF Amount to Pay"
+msgstr "Monto IGTF"
+
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
+msgid "Amount with IGTF"
+msgstr "Monto con IGTF"

@@ -11,9 +11,10 @@ class L10nVePrestacionesRate(models.Model):
     rate = fields.Float(string='Tasa de Interes (%)', required=True, digits=(16, 2))
     name = fields.Char(string='Descripcion', compute='_compute_name', store=True)
 
-    _sql_constraints = [
-        ('date_unique', 'unique(date)', 'Ya existe una tasa registrada para este mes.')
-    ]
+    _date_unique = models.Constraint(
+        'unique(date)',
+        'Ya existe una tasa registrada para este mes.',
+    )
 
     @api.depends('date')
     def _compute_name(self):

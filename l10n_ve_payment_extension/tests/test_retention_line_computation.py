@@ -1,6 +1,7 @@
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
+from .rate_helper import seed_foreign_rate
 import logging, random
 
 _logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class TestRetentionLineComputation(TransactionCase):
             "foreign_currency_id": cls.currency_usd.id,
             "country_id": 28,
         })
+        seed_foreign_rate(cls.env)
 
         def get_or_create_account(code, ttype, name, recon=False):
             account = cls.env["account.account"].search([("code", "=", code)], limit=1)
@@ -169,6 +171,10 @@ class TestRetentionLineComputation(TransactionCase):
             "property_account_income_id": self.acc_income.id,
             "supplier_taxes_id": [Command.clear()],
         })
+        # l10n_ve_accountant injects the company default purchase tax on create; clear it to get a tax-free bill.
+        product_no_tax.product_tmpl_id.with_context(skip_tax_validation_on_write=True).write(
+            {"supplier_taxes_id": [Command.clear()]}
+        )
         with Form(self.env["account.move"].with_context(
             default_move_type="in_invoice", default_journal_id=self.purchase_journal.id,
         )) as inv_form:

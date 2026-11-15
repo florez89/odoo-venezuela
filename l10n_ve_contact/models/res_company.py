@@ -17,7 +17,25 @@ class ResCompany(models.Model):
         default = False,
         string='Validate user creation general',
     )
-    
+
+    validate_partner_name_immutable = fields.Boolean(
+        default=True,
+        string="Prevent renaming contacts with transactions",
+    )
+
+    prefix_vat = fields.Selection(
+        related="partner_id.prefix_vat",
+        string="Prefix VAT",
+        readonly=False,
+        store=True,
+        help="Literal (V/E/J/G/P/C) of the company's own RIF. Not set "
+        "automatically on company creation -- must be confirmed here so "
+        "reports that print the company's RIF (retention voucher, ARCV, "
+        "SENIAT filings) show the correct literal instead of the Selection "
+        "field's default.",
+    )
+
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

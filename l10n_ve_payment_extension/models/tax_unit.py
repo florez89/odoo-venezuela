@@ -5,7 +5,13 @@ from odoo.exceptions import UserError
 class TaxUnit(models.Model):
     _inherit = "tax.unit"
 
-    available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True)
+    available_date = fields.Date(
+        string="Publish Date",
+        store=True,
+        tracking=True,
+        required=True,
+        default=fields.Date.context_today,
+    )
 
     @api.constrains('value', 'available_date')
     def _check_unique_tax_unit(self):
@@ -49,10 +55,7 @@ class TaxUnit(models.Model):
                 if not record.status:
                     continue
 
-                retentions = self.env['fees.retention'].search([
-                    ('apply_subtracting', '=', True),
-                    ('status', '=', True),
-                ])
+                retentions = self.env['fees.retention'].search([])
 
                 for ret in retentions:
                     ret.tax_unit_ids = record.id
@@ -102,17 +105,12 @@ class TaxUnit(models.Model):
                 new_status = (rec.id == latest_record.id)
                 if rec.status != new_status:
                     super(TaxUnit, rec).write({'status': new_status})
-                
-                    self._trigger_retention_update(rec)
-                else:
-                    self._trigger_retention_update(rec)
+
+            self._trigger_retention_update(latest_record)
 
 
     def _trigger_retention_update(self, tax_unit_record):
-        retentions = self.env['fees.retention'].search([
-            ('apply_subtracting', '=', True),
-            ('status', '=', True)
-        ])
+        retentions = self.env['fees.retention'].search([])
         retentions.write({'tax_unit_ids': tax_unit_record.id})
         for ret in retentions:
 

@@ -1,6 +1,6 @@
 <odoo>
     <template id="report_invoice_document" name="l10n_ve_accountant_report_invoice_document" inherit_id="account.report_invoice_document">
-        <xpath expr="//div[contains(@class, 'page')][1]" position="after">
+        <xpath expr="//div[hasclass('page')][1]" position="after">
             <t t-if="o.state == 'draft'">
                 <div class="row mt-4">
                     <div class="col-12 text-center">

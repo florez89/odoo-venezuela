@@ -213,7 +213,8 @@ class TestSaleOrderRate(TransactionCase):
         
         self.assertAlmostEqual(so.amount_untaxed_total_signed, expected_amount_signed, delta=1.0, 
                                msg="Amount Untaxed Signed should be Amount Untaxed converted to Company Currency")
-        self.assertAlmostEqual(so.amount_total_signed, expected_amount_signed, delta=1.0,
+        # l10n_ve_accountant gives every product the company default tax (IVA), so the total includes it.
+        self.assertAlmostEqual(so.amount_total_signed, so.amount_total * 380.0, delta=1.0,
                                msg="Amount Total Signed should be Amount Total converted to Company Currency")
                                
         # Case 2: SO in Company Currency (VES)

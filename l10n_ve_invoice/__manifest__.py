@@ -3,10 +3,11 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "19.0.1.0.5",
+    "version": "19.0.1.0.28",
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accounting/Localizations/Account Chart",
     "depends": [
         "l10n_ve_rate",
@@ -31,7 +32,16 @@
         "wizard/accounting_reports_views.xml",
         "views/account_debit_note_view.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "l10n_ve_invoice/static/src/js/**/*.js",
+        ],
+        "web.assets_unit_tests": [
+            "l10n_ve_invoice/static/tests/unit/**/*.js",
+        ],
+    },
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",
+    "post_init_hook": "post_init_hook",
 }

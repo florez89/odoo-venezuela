@@ -1,13 +1,14 @@
 {
     "name": "Venezuela - reglas para listas de precio",
-    "version": "1.4",
+    "version": "19.0.1.4.0",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar reglas de listas de precio en Venezuela",
     "description": """
         Este módulo personaliza las reglas de listas de precio, precios en moneda extranjera y precios unitarios.
     """,
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Purchase",
     "depends": ["account", "account_invoice_pricelist", "l10n_ve_sale"],
     "data": [

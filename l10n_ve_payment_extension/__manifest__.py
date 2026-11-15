@@ -4,10 +4,11 @@
         Módulo de Retenciones Venezuela
     """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
-    "website": "https://binauraldev.com/",
+    "author": "Gustavo Florez, Binaural",
+    "maintainers": ["florez89"],
+    "website": "https://github.com/florez89/odoo-venezuela",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.0.18",
+    "version": "19.0.2.2.7",
     "depends": [
         "base",
         "account",
@@ -18,7 +19,6 @@
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
         "product",
-        "stock",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -53,7 +53,6 @@
         "views/account_payment.xml",
         "views/res_partner.xml",
         "views/account_move.xml",
-        "wizard/account_payment_register.xml",
         "wizard/arcv_report.xml",
         "wizard/municipal_retention_xlsx_report.xml",
         "wizard/municipal_retention_patent_report.xml",

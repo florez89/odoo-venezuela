@@ -1,67 +1,219 @@
-// /** @odoo-module */
+/** @odoo-module */
 
-// import { Payment } from "@point_of_sale/app/store/models";
-// import { patch } from "@web/core/utils/patch";
-// import {
-// 	formatFloat,
-// 	roundDecimals as round_di,
-// 	roundPrecision as round_pr,
-// 	floatIsZero,
-// } from "@web/core/utils/numbers";
+import { PosPayment } from "@point_of_sale/app/models/pos_payment";
+import { patch } from "@web/core/utils/patch";
+import { GT, LT } from "@point_of_sale/app/utils/numbers";
+import { roundPrecision } from "@web/core/utils/numbers";
 
-// // New orders are now associated with the current table, if any.
-// patch(Payment.prototype, {
-// 	setup(_defaultObj, options) {
-// 		super.setup(...arguments);
-// 	},
-// 	init_from_JSON(json) {
-// 		super.init_from_JSON(...arguments);
-// 		this.foreign_amount = json.foreign_amount || this.foreign_amount;
-// 		this.foreign_rate = json.foreign_rate || this.foreign_rate;
-// 	},
-// 	export_as_JSON() {
-// 		let res = super.export_as_JSON(...arguments);
-// 		res["foreign_amount"] = this.foreign_amount;
-// 		res["foreign_rate"] = this.order.get_conversion_rate();
-// 		return res;
-// 	},
-// 	get_foreign_amount() {
-// 		return this.foreign_amount || 0;
-// 	},
-// 	set_amount(amount, only = false) {
-// 		let is_due = amount == this.order.get_due();
-// 		let res = super.set_amount(...arguments);
-// 		if (!only) {
-// 			if (is_due) {
-// 				this.set_foreign_amount(this.order.get_foreign_due(), true);
-// 				return res;
-// 			}
-// 			this.foreign_amount = amount * this.pos.foreign_currency.rate; 
-// 		}
-// 		return res;
-// 	},
-// 	set_foreign_amount(amount, only = false) {
-// 		this.foreign_amount = amount;
-// 		if (!only) {
-// 			if (this.pos.currency.name == "VEF") {
-// 				if (this.payment_method.is_foreign_currency) {
-// 					this.amount=this.foreign_amount / this.pos.foreign_currency.rate
-// 					return;
-// 				}
-// 				this.amount = amount / this.order.get_conversion_rate();
-// 			}
-// 			if (this.pos.currency.name == "USD") {
-// 				if (this.payment_method.is_foreign_currency) {
-// 					this.set_amount(
-// 						this.foreign_amount * this.pos.foreign_currency.inverse_rate,
-// 					);
-// 					return;
-// 				}
-// 				this.set_amount(
-// 					this.foreign_amount * this.order.init_conversion_rate,
-// 					true,
-// 				);
-// 			}
-// 		}
-// 	},
-// });
+// Live patch for Odoo 19 PosPayment.
+//
+// Keeps `foreign_amount` (the display amount in the *foreign* currency) in
+// sync with `amount` (the amount in the POS main currency), using the
+// conversion helpers exposed by pos.order (which respect the "which one is
+// the main currency" business rule).
+patch(PosPayment.prototype, {
+    setup(vals) {
+        super.setup(...arguments);
+        this.foreign_amount = vals.foreign_amount || 0;
+        this.foreign_rate = vals.foreign_rate || 0;
+    },
+
+    serializeForORM(opts = {}) {
+        const data = super.serializeForORM(opts);
+        data["foreign_amount"] = this.foreign_amount || 0;
+        // `foreign_rate` is not set here: the order sync serializes its
+        // payments without calling this method, so the rate is stamped on the
+        // order's payment commands (PosOrder._setPaymentForeignRates).
+        return data;
+    },
+
+    _recomputeForeignFromLocal() {
+        // Called when the local `amount` is the source of truth (core setAmount).
+        // Uses the centralized pos_order._convert (mirror of pos.config._convert).
+        //
+        // Runs for EVERY payment method, not just is_foreign_currency ones.
+        // A payment tendered in local currency (Bs) still needs its USD
+        // equivalent for dual-currency accounting — see
+        // openspec/migration-lessons.md, "Pendientes por tratar
+        // (2026-07-10)". Gating this on is_foreign_currency used to zero
+        // foreign_amount for local-method payments, which silently zeroed
+        // foreign_debit/foreign_credit on every downstream accounting line
+        // (pos_session.py session close, pos_payment.py invoice payment
+        // moves) even though the conversion itself has nothing to do with
+        // which currency the cashier typed the amount in.
+        const order = this.pos_order_id;
+        if (!order || typeof order.localToForeign !== "function") {
+            this.foreign_amount = 0;
+            return;
+        }
+        // _convertOrderAmount uses the refund's original-sale rate when the
+        // order has refund lines, and the live rate otherwise. This keeps a
+        // refund paid in local currency (Bs) valued in USD at the SAME rate
+        // as the refund total, instead of today's rate.
+        this.foreign_amount = order._convertOrderAmount(this.amount || 0);
+    },
+
+    setAmount(value) {
+        super.setAmount(value);
+        this._recomputeForeignFromLocal();
+    },
+
+    get_amount() {
+        // Odoo 19 renamed to getAmount(); keep get_amount() as an alias
+        // because our templates and helpers still use snake_case.
+        return this.getAmount();
+    },
+
+    get_foreign_amount() {
+        return this.foreign_amount || 0;
+    },
+
+    set_foreign_amount(amount) {
+        // Foreign method: the user typed the foreign amount directly. We
+        // need to compute the equivalent LOCAL amount so the core's
+        // remainingDue = totalDue - amountPaid works.
+        //
+        // Business rule (Odoo native behavior for foreign payments): when
+        // the foreign amount covers the foreign due of the order, we treat
+        // the order as fully settled — the local `amount` is set to exactly
+        // the LOCAL remaining due, not the mathematical `foreign / rate`.
+        // Difference between them is FX-rounding noise that in real
+        // accounting is absorbed by an FX gain/loss entry.
+        //
+        // If the foreign amount is a partial payment (< foreign due), fall
+        // back to strict conversion.
+        //
+        // Combined payments (some lines in local, some in foreign) work
+        // because the foreign due is always derived from the LOCAL remaining
+        // due (totalDue - amountPaid across ALL payment lines, whatever their
+        // currency), then converted once. That way lines paid in local
+        // currency count correctly toward the foreign due.
+        const order = this.pos_order_id;
+        const requested = Number(amount) || 0;
+        this.foreign_amount = requested;
+
+        if (!order || typeof order.foreignToLocal !== "function") {
+            this.amount = 0;
+            return;
+        }
+
+        // Local remaining due BEFORE this payment line.
+        // Uses core totalDue/amountPaid semantics but subtracts SELF so a
+        // re-edit of the same line doesn't cascade.
+        const localTotal = Number(order.totalDue ?? 0) || 0;
+        const localPaidOthers = Array.from(order.payment_ids || []).reduce((sum, line) => {
+            if (line === this) return sum;
+            const done = typeof line.isDone === "function" ? line.isDone() : true;
+            if (!done) return sum;
+            const lineAmount = typeof line.getAmount === "function"
+                ? line.getAmount()
+                : (line.amount || 0);
+            return sum + (Number(lineAmount) || 0);
+        }, 0);
+        const localDueBefore = localTotal - localPaidOthers;
+
+        // Refund with a KNOWN original foreign rate (prefetched by the payment
+        // screen from the original order's foreign tender): mirror the tender
+        // exactly. Value the line as |foreign| * rate (direct), so refunding
+        // $45 gives back the SAME Bs the original $45 payment recorded
+        // (matches "ver pagos de origen" to the cent), instead of the
+        // sale-oriented due-snapping below. Only snap to the exact local due
+        // when the tender just covers it (within one foreign-rounding step),
+        // to kill the sub-cent drift of the rounded foreign due on a full
+        // refund. Refund lines are negative, so foreign_amount is negated too.
+        const exactRate = typeof order.getRefundForeignRate === "function"
+            ? order.getRefundForeignRate() : 0;
+        if (exactRate > 0) {
+            const sign = localTotal < 0 ? -1 : 1;
+            const mag = Math.abs(requested);
+            this.foreign_amount = sign * mag;
+            // foreign→local at the exact original rate, via the shared engine
+            // primitive (exactRate is already local-per-foreign).
+            const directLocal = order.foreignToLocalAtRate(mag, exactRate);
+            const absDue = Math.abs(localDueBefore);
+            // "Covers the due" is decided in the currency the cashier typed:
+            // the typed magnitude is at most one foreign step away from the
+            // due the cashier sees (the exact-rate due rounded to the foreign
+            // currency; main→foreign multiplier 1/exactRate). currency.comp
+            // rounds both operands first, so float noise right at the step
+            // (0.40000000000009 Bs for 1 cent at 40) no longer turns the
+            // boundary into a mirror (task 83148, H20).
+            const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
+                ?? order.get_foreign_currency?.();
+            const fRounding = Number(fc?.rounding)
+                || Number(order._getForeignCurrencyRecord?.()?.rounding) || 0.01;
+            const dueForeign = order.localToForeignAtRate(absDue, 1 / exactRate, false);
+            const hasComp = typeof fc?.comp === "function";
+            const dueShown = hasComp
+                ? fc.round(dueForeign)
+                : roundPrecision(dueForeign, fRounding);
+            const distance = Math.abs(mag - dueShown); // magnitudes, no sign
+            // Typed amounts come in foreign steps, so the distance is a whole
+            // number of steps plus noise: half a step separates 1 from 2.
+            const coversDue = hasComp
+                ? fc.comp(distance, fRounding) !== GT
+                : distance < fRounding * 1.5;
+            this.amount = coversDue
+                ? localDueBefore // full/exact refund: snap to due, no drift
+                : sign * directLocal; // overpay/partial: mirror the tender
+            return;
+        }
+
+        // A refund payment carries the refund's sign even if the cashier
+        // typed a positive amount (task 83148, H1). Sales keep what was typed.
+        const sign = localTotal < 0 ? -1 : 1;
+        const signedRequested = sign < 0 && requested > 0 ? -requested : requested;
+        this.foreign_amount = signedRequested;
+
+        // Convert local due to foreign ONCE (same rounding as
+        // get_foreign_total_with_tax → foreign_currency.round).
+        //
+        // _convertOrderAmount (not the raw localToForeign) so a REFUND uses
+        // the frozen original-sale rate, not today's live rate: otherwise the
+        // foreign due shown/typed here diverges from the foreign amount the
+        // original payment actually had (visible via "ver pagos de origen").
+        const foreignDueBefore = order._convertOrderAmount(localDueBefore);
+
+        // Resolve the real ResCurrency record (AbstractNumbers) when
+        // possible; get_foreign_currency may return a bare id.
+        const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
+            ?? order.get_foreign_currency?.();
+        const hasComp = Boolean(fc && typeof fc.comp === "function");
+
+        // "Covers the due" means |requested| >= |due|. Works for both
+        // positive (sales) and negative (refunds) amounts, and for mixed
+        // signs (comparison is on magnitudes).
+        const absRequested = requested < 0 ? -requested : requested;
+        const absDue = foreignDueBefore < 0 ? -foreignDueBefore : foreignDueBefore;
+
+        // currency.comp() rounds both operands to the foreign currency
+        // precision before comparing, so the half-rounding tolerance is
+        // built in. isZero() also treats sub-rounding residual due (fx
+        // noise) as "nothing due". Manual fallback for unresolved currency.
+        const coversDue = hasComp
+            ? !fc.isZero(foreignDueBefore) && fc.comp(absRequested, absDue) !== LT
+            : foreignDueBefore !== 0
+                && absRequested + (Number(fc?.rounding) || 0.01) / 2 >= absDue;
+
+        if (coversDue) {
+            // Payment covers the local due exactly, plus any overpay.
+            // isPositive() discards float-noise "overpay" below the
+            // currency precision instead of converting it. The overpay is a
+            // magnitude: it takes the sign of the due (negative on a refund).
+            const overpaymentForeign = absRequested - absDue;
+            const hasOverpay = hasComp
+                ? fc.isPositive(overpaymentForeign)
+                : overpaymentForeign > 0;
+            const overpaymentLocal = hasOverpay
+                ? sign * order._convertForeignOrderAmount(overpaymentForeign)
+                : 0;
+            this.amount = localDueBefore + overpaymentLocal;
+            return;
+        }
+
+        // Partial payment: strict mathematical conversion. Refund-aware so a
+        // partial refund's local (main-currency) amount is proportional to
+        // the original sale's rate, not today's rate.
+        this.amount = order._convertForeignOrderAmount(signedRequested);
+    },
+});

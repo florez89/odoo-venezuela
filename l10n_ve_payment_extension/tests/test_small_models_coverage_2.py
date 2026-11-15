@@ -2,6 +2,8 @@ from odoo.tests import tagged
 from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
+from psycopg2 import IntegrityError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -35,7 +37,8 @@ class TestSmallModels2(TransactionCase):
 
     def test_04_economic_branch_constraint(self):
         self.env["economic.branch"].create({"name": "UNIQUE_BRANCH_3"})
-        with self.assertRaises(ValidationError):
+        # the unique SQL constraint is enforced by the database since v19
+        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"):
             self.env["economic.branch"].create({"name": "UNIQUE_BRANCH_3"})
         _logger.info("========= test_04 passed =========")
 

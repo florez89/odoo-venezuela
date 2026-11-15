@@ -7,6 +7,18 @@
             <!-- <xpath expr="//group[1]/field[@name='ref']" position="after">
                 <field name="concept" />
             </xpath> -->
+            <xpath expr="//header" position="after">
+                <div class="alert alert-warning mb-0" role="alert"
+                    invisible="not is_foreign_rate_outdated or state != 'draft'">
+                    The exchange rate of this payment is from <field name="foreign_rate_date" class="oe_inline"/>,
+                    <field name="foreign_rate_age_days" class="oe_inline"/> days old. Update the exchange rates
+                    or confirm that it is the rate in force when confirming.
+                </div>
+            </xpath>
+            <!-- Only the form asks to confirm an outdated rate: code posting payments is not stopped -->
+            <xpath expr="//header/button[@name='action_post']" position="attributes">
+                <attribute name="context">{'l10n_ve_check_rate_age': True}</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="block_change_partner_after_post" invisible="1"/>
             </xpath>

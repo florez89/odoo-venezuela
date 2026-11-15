@@ -12,8 +12,6 @@ class AccountChartTemplate(models.AbstractModel):
             "code_digits": "7",
             "property_account_receivable_id": "account_activa_account_1122001",
             "property_account_payable_id": "account_activa_account_2122001",
-            "property_account_expense_categ_id": "account_activa_account_7151001",
-            "property_account_income_categ_id": "account_activa_account_5111001",
             "name": _("Venezuela - Binaural"),
         }
 
@@ -30,5 +28,11 @@ class AccountChartTemplate(models.AbstractModel):
                 "expense_currency_exchange_account_id": "account_activa_account_9113006",
                 "account_sale_tax_id": "tax1sale",
                 "account_purchase_tax_id": "tax1purchase",
+                # In Odoo 19 the default income/expense accounts live on the company
+                # (the old `property_account_*_categ_id` keys are ignored).
+                "income_account_id": "account_activa_account_5111001",
+                "expense_account_id": "account_activa_account_7151001",
+                "account_stock_journal_id": "inventory_valuation",
+                "account_stock_valuation_id": "account_activa_account_1131002",
             },
         }
