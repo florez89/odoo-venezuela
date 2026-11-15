@@ -140,6 +140,8 @@ class TestIGTFBasic(IGTFTestCommon):
                 "payment_type": "inbound",
             }
         )
+        # Odoo 18 only creates the journal entry of a payment with an outstanding account.
+        pm_line_bs.payment_account_id = pm_line_bs.payment_account_id or self.outstanding_account
 
         pay_bsf = self._create_payment(
             amount=round(ig_tf * usd_to_bsf, 2),

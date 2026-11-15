@@ -48,6 +48,9 @@ class AccountMove(models.Model):
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)])
+            # number_next_actual is read from the PostgreSQL sequence: drop the cached value, which
+            # is stale once a previous invoice of the transaction consumed a number.
+            sequence.invalidate_recordset(["number_next_actual"])
             correlative = str(sequence.number_next_actual).zfill(sequence.padding)
 
             invoices = record.env['account.move'].with_company(self.env.company.id).sudo().search([("correlative","=",correlative),('move_type', 'in',["out_invoice","out_refund"]),('company_id', '=', self.env.company.id)])

@@ -1,12 +1,15 @@
+import json
 import logging
 from collections import defaultdict
+from contextlib import contextmanager
 
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import drop_index, float_compare, index_exists
+from odoo.tools import float_compare
+from odoo.tools.sql import drop_index, index_exists
 from odoo.tools.float_utils import float_round
-from odoo.tools.misc import formatLang
+from odoo.tools.misc import formatLang, format_date
 
 _logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ class AccountMove(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.currency_foreign_id.id or False
+        return self.env.company.foreign_currency_id.id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -56,6 +59,45 @@ class AccountMove(models.Model):
 
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
+
+    foreign_rate_date = fields.Date(
+        string="Rate Used Date",
+        compute="_compute_rate",
+        store=True,
+        copy=False,
+        help="Date of the exchange rate in force used by this document: the "
+        "latest rate dated on or before its rate date.",
+    )
+    foreign_rate_age_days = fields.Integer(
+        string="Rate Age (Days)",
+        compute="_compute_foreign_rate_age",
+    )
+    is_foreign_rate_outdated = fields.Boolean(
+        string="Outdated Rate",
+        compute="_compute_foreign_rate_age",
+        help="The rate is older than the company's maximum rate age: posting "
+        "the document from the form asks for confirmation.",
+    )
+
+    def _get_foreign_rate_reference_date(self):
+        """Date whose rate the document uses (same rule as _compute_rate): the
+        invoice date for sale documents and the accounting date for every other
+        move, today when it is empty."""
+        self.ensure_one()
+        date_field = "invoice_date" if self.is_sale_document(include_receipts=True) else "date"
+        return self[date_field] or fields.Date.today()
+
+    @api.depends("foreign_rate_date", "invoice_date", "date", "move_type", "company_id.rate_max_age_days")
+    def _compute_foreign_rate_age(self):
+        for move in self:
+            age = 0
+            if move.foreign_rate_date:
+                age = (move._get_foreign_rate_reference_date() - move.foreign_rate_date).days
+            limit = move.company_id.rate_max_age_days
+            move.foreign_rate_age_days = age
+            move.is_foreign_rate_outdated = bool(
+                limit and age > limit and move.is_invoice(include_receipts=True)
+            )
 
     vat = fields.Char(
         string="VAT",
@@ -310,7 +352,7 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.foreign_currency_id.id
 
         res = super().get_view(view_id, view_type, **options)
 
@@ -340,7 +382,7 @@ class AccountMove(models.Model):
         """
         for vals in vals_list:
 
-            if 'name' in vals and vals['name'] != "/":
+            if vals.get('name') and vals['name'] != "/":
                 
                 domain = [
                     ('name', '=', vals['name']),
@@ -359,6 +401,8 @@ class AccountMove(models.Model):
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+                # it keeps the rate of the invoice it reverses on purpose
+                move.foreign_rate_date = False
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
@@ -380,7 +424,7 @@ class AccountMove(models.Model):
 
         if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
-        if 'name' in vals and vals['name'] != "/":
+        if vals.get('name') and vals['name'] != "/":
             for move in self:
                 partner_id = vals.get('partner_id', move.partner_id.id)
                 
@@ -489,7 +533,7 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         # self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
-        payment = self.payment_id
+        payment = self.origin_payment_id
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
         # payment to compute the foreign debit/credit.
@@ -508,7 +552,7 @@ class AccountMove(models.Model):
             line_foreign_currency_id = [
                 line
                 for line in self.line_ids
-                if line.currency_id == self.env.company.currency_foreign_id
+                if line.currency_id == self.env.company.foreign_currency_id
             ]
 
             for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
@@ -610,12 +654,16 @@ class AccountMove(models.Model):
                         balance_amount = line.foreign_debit
                         if balance == "credit":
                             balance_amount = line.foreign_credit
-                        tax_amount = line.tax_ids._compute_amount(
-                            float_round(
-                                balance_amount,
-                                precision_rounding=line.foreign_currency_id.rounding,
-                            ),
-                            balance_amount,
+                        # account.tax._compute_amount was removed in Odoo 18.
+                        tax_amount = sum(
+                            tax["amount"]
+                            for tax in line.tax_ids.compute_all(
+                                float_round(
+                                    balance_amount,
+                                    precision_rounding=line.foreign_currency_id.rounding,
+                                ),
+                                handle_price_include=False,
+                            )["taxes"]
                         )
                         if (
                             self.env.company.tax_calculation_rounding_method
@@ -653,7 +701,7 @@ class AccountMove(models.Model):
 
         if (
             account_payable_or_receivable_line.currency_id
-            != self.env.company.currency_foreign_id
+            != self.env.company.foreign_currency_id
         ):
             if account_payable_or_receivable_line.debit > 0:
                 account_payable_or_receivable_line.foreign_debit = sum(
@@ -725,12 +773,17 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                # a rate typed by the user has no publication date to age
+                move.foreign_rate_date = False
                 continue
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
-            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id, rate_date, with_rate_date=True
+            )
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            move.foreign_rate_date = rate_values.get("rate_date", False)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -938,8 +991,13 @@ class AccountMove(models.Model):
 
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
+            # `l10n_ve_check_rate_age` comes from the form's Confirm button only:
+            # code posting documents (automatic flows) is never stopped.
+            check_rate_age = self.env.context.get("l10n_ve_check_rate_age")
             for move in self:
-                if move.move_type in ("out_invoice", "out_refund"):
+                if move.move_type in ("out_invoice", "out_refund") or (
+                    check_rate_age and move.is_foreign_rate_outdated
+                ):
                     return {
                         'name': _('Alert'),
                         'type': 'ir.actions.act_window',
@@ -969,8 +1027,29 @@ class AccountMove(models.Model):
                     )
         return super().action_post()
 
+    def _post(self, soft=True):
+        outdated = {
+            move: (move.foreign_rate_date, move.foreign_rate_age_days)
+            for move in self
+            if move.is_foreign_rate_outdated
+        }
+        posted = super()._post(soft=soft)
+        for move in posted:
+            if move not in outdated:
+                continue
+            rate_date, age = outdated[move]
+            move.message_post(
+                body=_(
+                    "Posted by %(user)s with the exchange rate of %(rate_date)s, %(age)s days old.",
+                    user=self.env.user.name,
+                    rate_date=format_date(self.env, rate_date),
+                    age=age,
+                )
+            )
+        return posted
+
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
+        "invoice_line_ids.foreign_price",
         "invoice_line_ids.price_subtotal",
         "foreign_inverse_rate",
         "foreign_currency_id",
@@ -1036,8 +1115,9 @@ class AccountMove(models.Model):
 
     def button_draft(self):
 
-        if self.move_type == "in_invoice":
-            self.is_reset_to_draft_for_price_change = True
+        self.filtered(
+            lambda move: move.move_type == "in_invoice"
+        ).is_reset_to_draft_for_price_change = True
 
         return super().button_draft()
 
@@ -1052,3 +1132,107 @@ class AccountMove(models.Model):
                     and line.display_type == "product"
                 ):
                     raise ValidationError(_("All added lines must indicate the product."))
+
+    # -------------------------------------------------------------------------
+    # Foreign amounts of the tax lines
+    # -------------------------------------------------------------------------
+    # Odoo 17 computed the tax lines from account.move.line.compute_all_tax, where this module
+    # added the foreign balance of each tax line. Odoo 18 removed that field and computes the
+    # tax lines in _sync_tax_lines with the base lines helpers of account.tax, so the foreign
+    # balance of the tax lines is synchronized right after the tax lines are.
+
+    @contextmanager
+    def _sync_tax_lines(self, container):
+        with super()._sync_tax_lines(container):
+            yield
+        for move in container["records"]:
+            if move.state == "draft":
+                move._sync_tax_lines_foreign_balance()
+
+    def _prepare_product_foreign_base_line_for_taxes_computation(self, product_line):
+        """Base line of a product journal item expressed in the foreign currency."""
+        self.ensure_one()
+        is_invoice = self.is_invoice(include_receipts=True)
+        if is_invoice:
+            price_unit = product_line.foreign_price
+        else:
+            price_unit = product_line.amount_currency * self.foreign_inverse_rate
+        return self.env["account.tax"]._prepare_base_line_for_taxes_computation(
+            product_line,
+            price_unit=price_unit,
+            quantity=product_line.quantity if is_invoice else 1.0,
+            discount=product_line.discount if is_invoice else 0.0,
+            currency_id=self.foreign_currency_id,
+            rate=1.0,
+            sign=self.direction_sign if is_invoice else 1,
+            special_mode=False if is_invoice else "total_excluded",
+        )
+
+    @api.model
+    def _get_foreign_tax_line_key(self, values):
+        """Key matching a tax journal item with the tax amounts computed in foreign currency.
+        The currency is not part of the key since the foreign amounts use another currency."""
+
+        def ids(value):
+            if isinstance(value, models.BaseModel):
+                return frozenset(value.ids)
+            if isinstance(value, (list, tuple)) and value and isinstance(value[0], (list, tuple)):
+                return frozenset(value[0][2])
+            return frozenset(value or [])
+
+        def record_id(value):
+            return value.id if isinstance(value, models.BaseModel) else (value or False)
+
+        return (
+            record_id(values.get("tax_repartition_line_id")),
+            record_id(values.get("account_id")),
+            record_id(values.get("partner_id")),
+            record_id(values.get("group_tax_id")),
+            ids(values.get("tax_ids")),
+            ids(values.get("tax_tag_ids")),
+            json.dumps(values.get("analytic_distribution") or {}, sort_keys=True),
+        )
+
+    def _sync_tax_lines_foreign_balance(self):
+        """Set the foreign balance of the tax journal items from the taxes computed on the foreign
+        prices of the product lines."""
+        self.ensure_one()
+        tax_amls = self.line_ids.filtered("tax_repartition_line_id")
+        if not tax_amls or not self.foreign_currency_id:
+            return
+        AccountTax = self.env["account.tax"]
+        company = self.company_id
+        base_amls = self.line_ids.filtered(lambda line: line.display_type == "product")
+        base_lines = [
+            self._prepare_product_foreign_base_line_for_taxes_computation(line)
+            for line in base_amls
+        ]
+        AccountTax._add_tax_details_in_base_lines(base_lines, company)
+        AccountTax._round_base_lines_tax_details(base_lines, company)
+        AccountTax._add_accounting_data_in_base_lines_tax_details(
+            base_lines, company, include_caba_tags=self.always_tax_exigible
+        )
+        tax_results = AccountTax._prepare_tax_lines(base_lines, company)
+
+        amounts_by_key = defaultdict(float)
+        amounts_by_repartition = defaultdict(list)
+        for values in tax_results["tax_lines_to_add"]:
+            amounts_by_key[self._get_foreign_tax_line_key(values)] += values["amount_currency"]
+            amounts_by_repartition[values["tax_repartition_line_id"]].append(
+                values["amount_currency"]
+            )
+
+        for line in tax_amls:
+            tax_line = AccountTax._prepare_tax_line_repartition_grouping_key(
+                self._prepare_tax_line_for_taxes_computation(line)
+            )
+            key = self._get_foreign_tax_line_key(tax_line)
+            if key in amounts_by_key:
+                foreign_balance = amounts_by_key[key]
+            elif len(amounts_by_repartition.get(line.tax_repartition_line_id.id, [])) == 1:
+                foreign_balance = amounts_by_repartition[line.tax_repartition_line_id.id][0]
+            else:
+                foreign_balance = 0.0
+            foreign_balance = self.foreign_currency_id.round(foreign_balance)
+            if self.foreign_currency_id.compare_amounts(line.foreign_balance, foreign_balance):
+                line.foreign_balance = foreign_balance

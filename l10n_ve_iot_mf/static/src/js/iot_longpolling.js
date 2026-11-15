@@ -1,22 +1,13 @@
 /** @odoo-module **/
 
-import { registry } from '@web/core/registry';
-import { IoTConnectionErrorDialog } from '@iot/iot_connection_error_dialog';
-import { IoTLongpolling } from '@iot/iot_longpolling';
+import { IoTLongpolling } from "@iot/iot_longpolling";
+import { patch } from "@web/core/utils/patch";
 
-export class BinauralIoTLongpolling extends IoTLongpolling {
-  constructor(dialogService) {
-    super(...arguments);
-    this.POLL_TIMEOUT = 6000000;
-    this.ACTION_TIMEOUT = 1600000;
-  }
-}
-
-export const iotLongpollingService = {
-  dependencies: ['dialog'],
-  start(_, { dialog }) {
-    return new BinauralIoTLongpolling(dialog);
-  }
-};
-
-registry.category('services').add('iot_longpolling', iotLongpollingService, { force: true });
+patch(IoTLongpolling.prototype, {
+    async setup() {
+        await super.setup(...arguments);
+        // Fiscal printers can take long to answer (reports, long documents).
+        this.POLL_TIMEOUT = 6000000;
+        this.ACTION_TIMEOUT = 1600000;
+    },
+});

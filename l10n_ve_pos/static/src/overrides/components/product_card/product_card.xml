@@ -1,9 +1,10 @@
-
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.ProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
-        <xpath expr="//div[@class='overflow-hidden lh-sm fw-bolder product-name'][1]" position="after">
-            <div class="free-qty" t-if="show_free_qty" t-attf-style="{{ props.qty_available > 0 ? 'color: green' : 'color: red' }}">
-                Available: <t t-out="props.qty_available" />
+        <xpath expr="//div[hasclass('product-name')]" position="after">
+            <div t-if="showFreeQty" class="ve-free-qty small px-2"
+                t-attf-class="{{ props.product.qty_available > 0 ? 'text-success' : 'text-danger' }}">
+                Available: <t t-esc="qtyAvailable"/>
             </div>
         </xpath>
     </t>

@@ -24,15 +24,16 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
                 "invoice_digital_tfhka": True,
             }
         )
 
         # ───────────────────────────────────────────────────── helpers
+        # Odoo 18: accounts belong to companies through company_ids (no company_id)
         def acc(code, ttype, name, recon=False):
             a = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", self.company.id)], limit=1
             )
             if not a:
                 a = Account.create(
@@ -41,7 +42,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_id": self.company.id,
+                        "company_ids": [self.company.id],
                     }
                 )
             return a
@@ -841,7 +842,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = datetime.now() - timedelta(days=1)
+        # The digitization date is the user's local date (America/Caracas), so the
+        # due date must be computed in that zone: a UTC date fails 00:00-04:00 UTC.
+        local_today = fields.Datetime.context_timestamp(
+            self.invoice.with_context(tz=self.env.user.tz), fields.Datetime.now()
+        ).date()
+        self.invoice.invoice_date_due = local_today - timedelta(days=1)
 
         with self.assertRaises(UserError) as e:        
             self.invoice.generate_document_digital()

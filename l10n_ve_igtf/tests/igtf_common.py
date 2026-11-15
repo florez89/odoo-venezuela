@@ -18,26 +18,27 @@ class IGTFTestCommon(TransactionCase):
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
             }
         )
 
+        # Odoo 18: accounts belong to companies through company_ids (no company_id)
         def account(code, ttype, name, recon=False):
             """auxiliar function whhich creates an account if it does not exist,avoiding duplicates."""
             account_founded = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", self.company.id)], limit=1
             )
             if not account_founded:
-                new_account = Account.create(
+                account_founded = Account.create(
                     {
                         "name": name,
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_id": self.company.id,
+                        "company_ids": [self.company.id],
                     }
                 )
-            return new_account
+            return account_founded
 
         self.acc_receivable = account(
             "1101", "asset_receivable", "CxC", recon=True)
@@ -67,7 +68,7 @@ class IGTFTestCommon(TransactionCase):
 
         def get_or_create(code, acc_type, name, reconcile=False):
             acc = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", self.company.id)], limit=1
             )
             if not acc:
                 acc = Account.create(
@@ -76,7 +77,7 @@ class IGTFTestCommon(TransactionCase):
                         "code": code,
                         "account_type": acc_type,
                         "reconcile": reconcile,
-                        "company_id": self.company.id,
+                        "company_ids": [self.company.id],
                     }
                 )
             return acc
@@ -95,12 +96,14 @@ class IGTFTestCommon(TransactionCase):
             "13600", "asset_current", "Anticipo Proveedores", reconcile=True
         )
 
-        self.company.write(
-            {
-                "advance_customer_account_id": self.advance_cust_acc.id,
-                "advance_supplier_account_id": self.advance_supp_acc.id,
-            }
-        )
+        # The advance accounts come from an optional advance payments module, not in this repository.
+        if "advance_customer_account_id" in self.company._fields:
+            self.company.write(
+                {
+                    "advance_customer_account_id": self.advance_cust_acc.id,
+                    "advance_supplier_account_id": self.advance_supp_acc.id,
+                }
+            )
 
         # -------- Método de pago manual inbound -----------------------
         manual_in = self.env.ref("account.account_payment_method_manual_in")
@@ -120,6 +123,19 @@ class IGTFTestCommon(TransactionCase):
             }
         )
 
+        # Odoo 18 only creates the journal entry of a payment when its payment method line has an
+        # outstanding account, and the tests reconcile the invoices with that entry.
+        outstanding_account = self.outstanding_account = get_or_create(
+            "11030", "asset_current", "Outstanding Receipts", reconcile=True
+        )
+        self.env["account.payment.method.line"].search(
+            [
+                ("journal_id.company_id", "=", self.company.id),
+                ("journal_id.type", "in", ("bank", "cash")),
+                ("payment_account_id", "=", False),
+            ]
+        ).payment_account_id = outstanding_account
+
         # -------- Partner, producto y factura -------------------------
         self.partner = self.env["res.partner"].create(
             {"name": "Cliente IGTF", "vat": "J123"}
@@ -129,6 +145,9 @@ class IGTFTestCommon(TransactionCase):
                 "name": "Servicio",
                 "list_price": 100,
                 "property_account_income_id": self.acc_income.id,
+                # The expected amounts assume an untaxed service, while the company chart
+                # gives new products its default sale tax.
+                "taxes_id": [Command.clear()],
             }
         )
 
@@ -157,7 +176,8 @@ class IGTFTestCommon(TransactionCase):
                 "invoice_line_ids": [line],
             }
         )
-        inv.action_post()
+        # Without this context l10n_ve_accountant returns the confirmation wizard instead of posting.
+        inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     def _create_payment(

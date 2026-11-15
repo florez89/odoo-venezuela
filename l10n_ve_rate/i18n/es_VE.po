@@ -95,3 +95,39 @@ msgstr ""
 msgid ""
 "The currency foreign must be different from the currency of the company"
 msgstr "La moneda alterna debería ser diferente a la moneda base"
+#. module: l10n_ve_rate
+#: model:ir.model.fields,field_description:l10n_ve_rate.field_res_company__rate_max_age_days
+#: model:ir.model.fields,field_description:l10n_ve_rate.field_res_config_settings__rate_max_age_days
+msgid "Maximum Rate Age (Days)"
+msgstr "Antigüedad máxima de la tasa (días)"
+
+#. module: l10n_ve_rate
+#: model:ir.model.fields,help:l10n_ve_rate.field_res_company__rate_max_age_days
+#: model:ir.model.fields,help:l10n_ve_rate.field_res_config_settings__rate_max_age_days
+msgid ""
+"A document whose exchange rate is older than this number of days shows a "
+"warning and asks for confirmation before it is posted. 0 disables the "
+"warning."
+msgstr ""
+"Un documento cuya tasa de cambio tenga más de este número de días muestra "
+"un aviso y pide confirmación antes de publicarse. 0 desactiva el aviso."
+
+#. module: l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+msgid "Maximum Rate Age"
+msgstr "Días máximos de antigüedad de la tasa"
+
+#. module: l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+msgid ""
+"Days a rate can be used before documents warn about it and ask for "
+"confirmation to be posted. 0 disables the warning."
+msgstr ""
+"Días que una tasa puede usarse antes de que los documentos avisen y pidan "
+"confirmación para publicarse. 0 desactiva el aviso."
+
+#. module: l10n_ve_rate
+#. odoo-python
+#: code:addons/l10n_ve_rate/models/res_company.py:0
+msgid "The maximum rate age cannot be negative."
+msgstr "La antigüedad máxima de la tasa no puede ser negativa."

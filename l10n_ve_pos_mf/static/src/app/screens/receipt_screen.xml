@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.ReceiptScreen" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_payment_successful')]" position="inside">
+            <div t-if="currentOrder.mf_invoice_number" class="ve-mf-info d-flex flex-column mt-2">
+                <span>Invoice number: <span class="ve-mf-invoice-number" t-esc="currentOrder.mf_invoice_number"/></span>
+                <span t-if="currentOrder.fiscal_machine">Fiscal machine serial: <t t-esc="currentOrder.fiscal_machine"/></span>
+                <span t-if="currentOrder.mf_reportz">Z report: <t t-esc="currentOrder.mf_reportz"/></span>
+            </div>
+        </xpath>
+    </t>
+</templates>

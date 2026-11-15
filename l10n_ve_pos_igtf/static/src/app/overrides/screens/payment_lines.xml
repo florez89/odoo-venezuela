@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<templates>
-    <t t-name="PaymentScreenPaymentLines" t-inherit="point_of_sale.PaymentScreenPaymentLines" t-inherit-mode="extension" owl="1">
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_igtf.PaymentScreenPaymentLines" t-inherit="point_of_sale.PaymentScreenPaymentLines" t-inherit-mode="extension">
         <xpath expr="//t[@t-foreach='props.paymentLines']" position="inside">
-            <div t-if="line.include_igtf" class="d-flex align-items-center ps-3 pb-2" t-att-class="line.selected ? 'bg-200' : 'bg-view'">
-                <span style="border: 1px solid #272727;padding: 2px 6px;border-radius: 5px">IGTF = <t t-out="formatIgtfAmount(line)"/></span>
+            <div t-if="line.igtfDetails and line.igtfDetails.igtf" class="ve-igtf d-flex align-items-center ps-3 pb-2">
+                <span class="border rounded px-2">IGTF = <span class="ve-igtf-amount" t-esc="formatIgtfAmount(line)"/></span>
             </div>
         </xpath>
-     </t>
- </templates>
+    </t>
+</templates>

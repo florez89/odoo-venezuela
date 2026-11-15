@@ -23,7 +23,7 @@ class AccountRetention(models.Model):
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
-        default=lambda self: self.env.company.currency_foreign_id.id,
+        default=lambda self: self.env.company.foreign_currency_id.id,
     )
     base_currency_is_vef = fields.Boolean(
         default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
@@ -39,12 +39,10 @@ class AccountRetention(models.Model):
     name = fields.Char(
         "Description",
         size=64,
-        states={"draft": [("readonly", False)]},
         help="Description of the withholding voucher",
     )
     code = fields.Char(
         size=32,
-        states={"draft": [("readonly", False)]},
         help="Code of the withholding voucher",
     )
     state = fields.Selection(
@@ -82,7 +80,6 @@ class AccountRetention(models.Model):
         "res.partner",
         "Social reason",
         required=True,
-        states={"draft": [("readonly", False)]},
         help="Social reason",
         tracking=True,
     )
@@ -90,12 +87,10 @@ class AccountRetention(models.Model):
     correlative = fields.Char(readonly=True)
     date = fields.Date(
         "Voucher Date",
-        states={"draft": [("readonly", False)]},
         help="Date of issuance of the withholding voucher by the external party.",
     )
     date_accounting = fields.Date(
         "Accounting Date",
-        states={"draft": [("readonly", False)]},
         default=fields.Date.context_today,
         help=(
             "Date of arrival of the document and date to be used to make the accounting record."
@@ -115,7 +110,6 @@ class AccountRetention(models.Model):
         "account.retention.line",
         "retention_id",
         "retention line",
-        states={"draft": [("readonly", False)]},
         help="Retentions",
     )
     
@@ -482,7 +476,12 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "supplier"
-        payment_vals["journal_id"] = self.env.company.iva_supplier_retention_journal_id.id
+        journal = self.env.company.iva_supplier_retention_journal_id
+        if journal:
+            payment_vals["journal_id"] = journal.id
+        else:
+            # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+            payment_vals.pop("journal_id", None)
         in_refund_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "in_refund"
         )
@@ -529,7 +528,12 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "customer"
-        payment_vals["journal_id"] = self.env.company.iva_customer_retention_journal_id.id
+        journal = self.env.company.iva_customer_retention_journal_id
+        if journal:
+            payment_vals["journal_id"] = journal.id
+        else:
+            # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+            payment_vals.pop("journal_id", None)
         out_refund_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "out_refund"
         )
@@ -763,6 +767,9 @@ class AccountRetention(models.Model):
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )
+            if not journal_id:
+                # Odoo 18: an explicit False journal is not replaced by the default payment journal.
+                payment_vals[-1].pop("journal_id")
 
         # payments = Payment.create(payment_vals)
         payments = self.env["account.payment"]

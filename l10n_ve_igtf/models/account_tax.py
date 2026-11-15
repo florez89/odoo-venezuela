@@ -1,4 +1,4 @@
-from odoo import models, _
+from odoo import api, models, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
 
@@ -11,9 +11,8 @@ _logger = logging.getLogger(__name__)
 class AccountTax(models.Model):
     _inherit = "account.tax"
 
-    def _prepare_tax_totals(
-        self, base_lines, currency, tax_lines=None, igtf_base_amount=False, is_company_currency_requested=False
-    ):
+    @api.model
+    def _get_tax_totals_summary(self, base_lines, currency, company, cash_rounding=None):
         """
         This function add values and calculated of igtf on invoices
         ---------------
@@ -34,7 +33,27 @@ class AccountTax(models.Model):
             - foreign_amount_total_igtf: float
             - formatted_foreign_amount_total_igtf: str
         """
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
+        res = super()._get_tax_totals_summary(
+            base_lines, currency, company, cash_rounding=cash_rounding
+        )
+        if not (company or self.env.company).foreign_currency_id:
+            # The IGTF amounts are also expressed in the foreign currency of the company,
+            # so none applies; views, reports and amount_to_pay_igtf still read the block.
+            zero = formatLang(self.env, 0.0, currency_obj=currency)
+            res["igtf"] = {
+                "apply_igtf": False,
+                "is_igtf_suggested": False,
+                "name": "",
+                "igtf_base_amount": 0.0,
+                "igtf_amount": 0.0,
+                "foreign_igtf_amount": 0.0,
+                "foreign_igtf_base_amount": 0.0,
+                "formatted_igtf_amount": zero,
+                "formatted_igtf_base_amount": zero,
+                "formatted_foreign_igtf_amount": zero,
+                "formatted_foreign_igtf_base_amount": zero,
+            }
+            return res
 
         invoice = self.env["account.move"]
         order = False
@@ -47,13 +66,16 @@ class AccountTax(models.Model):
         payments_igtf = False
 
         for base_line in base_lines:
-            type_model = base_line["record"]._name
-            if base_line["record"]._name == "account.move.line":
-                invoice = base_line["record"].move_id
-            if base_line["record"]._name == "sale.order.line":
-                order = base_line["record"].order_id
+            record = base_line.get("record")
+            if not isinstance(record, models.BaseModel):
+                continue
+            type_model = record._name
+            if record._name == "account.move.line":
+                invoice = record.move_id
+            if record._name == "sale.order.line":
+                order = record.order_id
 
-        foreign_currency = self.env.company.currency_foreign_id
+        foreign_currency = self.env.company.foreign_currency_id
         rate = 0
 
         if type_model == "account.move.line":

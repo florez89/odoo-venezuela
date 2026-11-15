@@ -20,19 +20,13 @@ class PosPayment(models.Model):
     @api.depends()
     def _compute_foreign_currency_id(self):
         for record in self:
-            record.foreign_currency_id = record.env.company.currency_foreign_id
-
-    def _export_for_ui(self, payment):
-        res = super()._export_for_ui(payment)
-        res["foreign_rate"] = payment.foreign_rate
-        res["foreign_amount"] = payment.foreign_amount
-        return res
+            record.foreign_currency_id = record.env.company.foreign_currency_id
 
     def _create_payment_moves(self, is_reverse=False):
         """The function that creates the payment entry was overwritten so that it has the same
         rate as the invoice/order/payment
         """
-        move_id = super()._create_payment_moves(is_reverse=is_reverse)
+        move_id = super()._create_payment_moves(is_reverse)
         for payment in self:
             payment_move = move_id.filtered(
                 lambda x: float_compare(
@@ -45,10 +39,14 @@ class PosPayment(models.Model):
             if not payment_move:
                 continue
 
+            if not payment.foreign_rate:
+                continue
             payment_move.write(
                 {
                     "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_rate,
+                    "foreign_inverse_rate": self.env["res.currency.rate"].compute_inverse_rate(
+                        payment.foreign_rate
+                    ),
                     "manually_set_rate": True,
                 }
             )

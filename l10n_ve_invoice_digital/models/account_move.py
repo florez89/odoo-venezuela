@@ -57,7 +57,7 @@ class AccountMove(models.Model):
 
         self.generate_document_data(document_number, document_type, series)
 
-    def get_base_url(self):
+    def _get_tfhka_base_url(self):
         if self.company_id.url_tfhka:
             return self.company_id.url_tfhka.rstrip("/")
         raise UserError(_("The URL is not configured in the company settings."))
@@ -68,7 +68,7 @@ class AccountMove(models.Model):
         raise ValidationError(_("Configuration error: The authentication token is empty."))
 
     def call_tfhka_api(self, endpoint_key, payload):
-        base_url = self.get_base_url()
+        base_url = self._get_tfhka_base_url()
         endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
 
         if not endpoint:
@@ -378,7 +378,7 @@ class AccountMove(models.Model):
 
             if amounts_foreign:
                 foreign_totals = {
-                    "moneda": record.company_id.currency_foreign_id.name,
+                    "moneda": record.company_id.foreign_currency_id.name,
                     "tipoCambio": str(round(record.foreign_rate, 2)),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],

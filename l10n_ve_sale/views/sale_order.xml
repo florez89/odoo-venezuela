@@ -5,6 +5,14 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
+            <xpath expr="//header" position="after">
+                <div class="alert alert-warning mb-0" role="alert"
+                    invisible="not is_foreign_rate_outdated or state not in ('draft', 'sent')">
+                    The exchange rate of this order is from <field name="foreign_rate_used_date" class="oe_inline"/>,
+                    <field name="foreign_rate_age_days" class="oe_inline"/> days old. Update the exchange rates
+                    before sending it to the customer.
+                </div>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id_domain" invisible="1" />
                 <field name="filter_partner"
@@ -21,13 +29,13 @@
                 <field name="vat" />
             </xpath>
 
-            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']"
+            <xpath expr="//notebook/page/field[@name='order_line']/list/field[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" />
             </xpath>
 
             <xpath
-                expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']"
+                expr="//notebook/page/field[@name='order_line']/list/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_subtotal" />
                 <field name="foreign_rate" optional="hide" readonly="1"/>
@@ -39,7 +47,7 @@
                     readonly="1" />
             </xpath>
 
-            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='tax_id']" position="attributes">
+            <xpath expr="//notebook/page/field[@name='order_line']/list/field[@name='tax_id']" position="attributes">
                 <attribute name="readonly">1</attribute>
             </xpath>
 
@@ -120,7 +128,7 @@
                     groups="!l10n_ve_sale.payment_terms_sale_order_group" />
             </field>
 
-            <xpath expr="//notebook/page[1]//tree/field[@name='price_unit']" position="replace">
+            <xpath expr="//notebook/page[1]//list/field[@name='price_unit']" position="replace">
                 <field name="price_unit" readonly="1"
                     groups="l10n_ve_sale.edit_product_line_pricing_sale_order_group" />
                 <field name="price_unit"
@@ -171,7 +179,7 @@
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">sale.order</field>
         <field name="view_id" ref="sale.view_quotation_tree_with_onboarding" />
-        <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="search_view_id" ref="sale.sale_order_view_search_inherit_quotation" />
         <field name="context">{'search_default_my_quotation': 1, 'default_filter_partner':
             'customer'}</field>

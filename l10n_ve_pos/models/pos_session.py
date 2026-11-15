@@ -17,121 +17,20 @@ class PosSession(models.Model):
         string="Foreign Currency",
     )
 
-    def load_pos_data(self):
-        res = super().load_pos_data()
-        res["prefix_vats"] = self.env["res.partner"]._fields["prefix_vat"].selection
-        return res
-
-    def _loader_params_pos_payment(self):
-        res = super()._loader_params_pos_payment(self)
-        res["search_params"]["fields"].append("foreign_rate")
-        return res
-
-    def _loader_params_pos_payment_method(self):
-        res = super()._loader_params_pos_payment_method()
-        res["search_params"]["fields"].append("is_foreign_currency")
-        return res
-
-    def _loader_params_account_tax(self):
-        res = super()._loader_params_account_tax()
-        res["search_params"]["fields"].append("type_tax_use")
-        return res
-
-    def _loader_params_res_partner(self):
-        res = super()._loader_params_res_partner()
-        res["search_params"]["fields"].append("prefix_vat")
-        res["search_params"]["fields"].append("city_id")
-        return res
-
-    def _loader_params_res_currency(self):
-        """
-        This method is used to get the params for the search_read of res.currency
-        """
-        res = super()._loader_params_res_currency()
-        res["search_params"]["domain"] = [
-            ("id", "in", [self.config_id.currency_id.id, self.config_id.foreign_currency_id.id])
-        ]
-        res["search_params"]["fields"].append("inverse_rate")
-        return res
-
-    def _loader_params_product_product(self):
-        params = super()._loader_params_product_product()
-        params["search_params"]["fields"].append("free_qty")
-        params["search_params"]["fields"].append("qty_available")
-        params["search_params"]["fields"].append("detailed_type")
-        params["context"] = {
-            **params["context"],
-            "warehouse": self.config_id.picking_type_id.warehouse_id.id,
-        }
-        return params
-
-    # def _get_pos_ui_product_product(self, params):
-    #     self = self.with_context(**params["context"])
-    #     products = []
-    #     if not self.config_id.limited_products_loading:
-    #         products = self.env["product.product"].search_read(**params["search_params"])
-    #     else:
-    #         products = self.config_id.get_limited_products_loading(
-    #             params["search_params"]["fields"]
-    #         )
-
-    #     products = self._sort_available_products(products)
-    #     self._process_pos_ui_product_product(products)
-    #     return products
-
-    def _loader_params_res_country_city(self):
-        return {"search_params": {"domain": [], "fields": ["name", "id"]}}
-
-    def _get_pos_ui_res_country_city(self, params):
-        return self.env["res.country.city"].search_read(**params["search_params"])
-
-    def _pos_ui_models_to_load(self):
-        result = super()._pos_ui_models_to_load()
-        if "res.country.city" not in result:
-            result.append("res.country.city")
-        return result
-
-    def get_pos_ui_product_product_by_params(self, custom_search_params):
-        """
-        :param custom_search_params: a dictionary containing params of a search_read()
-        """
-        params = self._loader_params_product_product()
-        self = self.with_context(**params['context'])
-        # custom_search_params will take priority
-        params["search_params"] = {**params["search_params"], **custom_search_params}
-        products = (
-            self.env["product.product"]
-            .with_context(active_test=False)
-            .search_read(**params["search_params"])
+    def _load_pos_data(self, data):
+        """Rights of the user on the numpad of the PoS (quantity and price)."""
+        res = super()._load_pos_data(data)
+        user = self.env.user
+        res["data"][0]["_l10n_ve_can_change_qty"] = user.has_group(
+            "l10n_ve_pos.group_change_qty_on_pos_order"
         )
-        products = self._sort_available_products(products)
-        if len(products) > 0:
-            self._process_pos_ui_product_product(products)
-        return products
-
-    def _sort_available_products(self, products):
-        if not self.env.company.pos_show_just_products_with_available_qty:
-            return products
-
-        return sorted(products, key=lambda x: x["qty_available"], reverse=True)
-
-    def _get_pos_ui_res_currency(self, params):
-        """
-        This method is used to get the res.currency for the pos
-        is override to change the order of the currencies
-        ------
-        Return:
-        Array:
-            0: company currency
-            1: foreign currency
-        """
-        res = self.env["res.currency"].search_read(**params["search_params"])
-        if res[0]["id"] != self.config_id.currency_id.id:
-            return [res[1], res[0]]
+        res["data"][0]["_l10n_ve_can_change_price"] = user.has_group(
+            "l10n_ve_pos.group_change_price_on_pos_order"
+        )
         return res
 
     def is_user_authorized(self):
-        is_group = self.env.user.has_group("l10_ve_pos.group_authorized_discount_pos")
+        is_group = self.env.user.has_group("l10n_ve_pos.group_authorized_discount_pos")
         return is_group
 
     # def _validate_cross_move(self):
@@ -289,44 +188,6 @@ class PosSession(models.Model):
 
     #         return move_lines
 
-    def _get_pos_ui_product_category(self, params):
-        categories = self.env['product.category'].search_read(**params['search_params'])
-        category_by_id = {category['id']: category for category in categories}
-        
-        for category in categories:
-            try:
-                category['parent'] = category_by_id[category['parent_id'][0]] if category['parent_id'] else None
-            except KeyError as e:
-                raise ValueError(_(f"The category %s does not belong to this company.") % category['parent_id'][1]) from e
-                
-        return categories
-    
-    def _process_pos_ui_product_product(self, products):
-        """
-        Modify the list of products to add the categories as well as adapt the lst_price
-        :param products: a list of products
-        """
-        if self.config_id.currency_id != self.company_id.currency_id:
-            for product in products:
-                product['lst_price'] = self.company_id.currency_id._convert(
-                    product['lst_price'], 
-                    self.config_id.currency_id,
-                    self.company_id, 
-                    fields.Date.today()
-                )
-        
-        categories = self._get_pos_ui_product_category(self._loader_params_product_category())
-        product_category_by_id = {category['id']: category for category in categories}
-
-        for product in products:
-            categ_id = product['categ_id'][0]
-            if categ_id in product_category_by_id:
-                product['categ'] = product_category_by_id[categ_id]
-            else:
-                raise ValueError(_(f"The category %s does not belong to this company.") % product['categ_id'][1])
-
-            product['image_128'] = bool(product['image_128'])
-
     def _create_cross_move(self, payment, line_vals):
         """
          This method create the move for the transitory account sets zero.
@@ -409,7 +270,7 @@ class PosSession(models.Model):
     #     res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
     #         payment_method, amounts, diff_amount
     #     )
-    #     account_payment = res.move_id.payment_id
+    #     account_payment = res.move_id.origin_payment_id
     #     account_payment.write(
     #         {
     #             "foreign_rate": self.config_id.foreign_rate,
@@ -429,38 +290,39 @@ class PosSession(models.Model):
     #         self._create_cross_move_payment(res)
     #     return res
 
-    def _create_split_account_payment(self, payment, amounts):
-        res = super(PosSession, self.with_context(from_pos=True))._create_split_account_payment(
-            payment, amounts
-        )
-        account_payment = res.move_id.payment_id
-
-        account_payment.write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
-        )
-
-        for line in account_payment.move_id.line_ids:
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
-
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
-
-        # if account_payment.pos_payment_method_id.apply_one_cross_move:
-        #     self._create_cross_move_payment(res)
-        return res
+    def _create_split_account_payments(self, payment_amounts_list):
+        """Odoo 18 creates the split payments in batch: give each account.payment
+        the PoS rate and the foreign amount of its PoS payment."""
+        payment_to_line = super(
+            PosSession, self.with_context(from_pos=True)
+        )._create_split_account_payments(payment_amounts_list)
+        Rate = self.env["res.currency.rate"]
+        for payment, receivable_lines in payment_to_line.items():
+            account_payment = receivable_lines.move_id.origin_payment_id
+            if not account_payment:
+                continue
+            foreign_rate = payment.foreign_rate or self.config_id.foreign_rate
+            account_payment.write(
+                {
+                    "foreign_rate": foreign_rate,
+                    "foreign_inverse_rate": Rate.compute_inverse_rate(foreign_rate),
+                }
+            )
+            for line in account_payment.move_id.line_ids:
+                if line.credit > 0:
+                    line.not_foreign_recalculate = True
+                    line.foreign_credit = abs(payment.foreign_amount)
+                if line.debit > 0:
+                    line.not_foreign_recalculate = True
+                    line.foreign_debit = abs(payment.foreign_amount)
+        return payment_to_line
 
     # def _create_cross_move_payment(self, move):
     #     move = self.env["account.move"].create(
     #         {
     #             "name": _("PoS Payment Method Adjustment"),
     #             "date": move.move_id.create_date,
-    #             "journal_id": move.move_id.payment_id.pos_payment_method_id.cross_account_journal.id,
+    #             "journal_id": move.move_id.origin_payment_id.pos_payment_method_id.cross_account_journal.id,
     #             "state": "draft",
     #             "line_ids": self._line_vals_move_cross_payment_incoming(move),
     #             "foreign_currency_id": move.move_id.foreign_currency_id.id,
@@ -483,10 +345,10 @@ class PosSession(models.Model):
     #     credit_account = 0
     #     debit_account = 0
     #     move_lines = []
-    #     for account in move.move_id.payment_id.pos_payment_method_id:
+    #     for account in move.move_id.origin_payment_id.pos_payment_method_id:
     #         debit_account = account.outstanding_account_id.id
 
-    #     for account_method in move.move_id.payment_id.pos_payment_method_id.cross_journal:
+    #     for account_method in move.move_id.origin_payment_id.pos_payment_method_id.cross_journal:
     #         credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
     #         currency = (
     #             account_method.currency_id.id
@@ -508,7 +370,7 @@ class PosSession(models.Model):
     #                         "debit": abs(move.credit),
     #                         "foreign_debit": abs(move.foreign_credit),
     #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
+    #                         "foreign_rate": move.move_id.origin_payment_id.foreign_rate,
     #                         "currency_id": account_method.currency_id.id
     #                         if account_method.currency_id
     #                         else self.env.company.currency_id.id,
@@ -526,7 +388,7 @@ class PosSession(models.Model):
     #                         "credit": abs(move.credit),
     #                         "foreign_credit": abs(move.foreign_credit),
     #                         "not_foreign_recalculate": True,
-    #                         "foreign_rate": move.move_id.payment_id.foreign_rate,
+    #                         "foreign_rate": move.move_id.origin_payment_id.foreign_rate,
     #                         "currency_id": self.env.company.currency_id.id,
     #                     }
     #                 ),
@@ -665,14 +527,15 @@ class PosSession(models.Model):
                 line.not_foreign_recalculate = True
                 line.foreign_debit = abs(amounts["foreign_amount"])
 
-        for payment in split_invoice_receivable_lines.keys():
-            line = split_invoice_receivable_lines[payment]
+        split_invoice_receivables = res.get("split_invoice_receivables")
+        for payment, line in split_invoice_receivable_lines.items():
+            foreign_amount = split_invoice_receivables[payment]["foreign_amount"]
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment["foreign_amount"])
+                line.foreign_credit = abs(foreign_amount)
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment["foreign_amount"])
+                line.foreign_debit = abs(foreign_amount)
 
         return res
 
@@ -747,16 +610,3 @@ class PosSession(models.Model):
                 line.foreign_debit = abs(foreign_amount)
                 if other_line.foreign_credit != line.foreign_debit:
                     other_line.foreign_credit = abs(line.foreign_debit)
-
-    #@override
-    def _loader_params_res_company(self):
-        return {
-            'search_params': {
-                'domain': [('id', '=', self.company_id.id)],
-                'fields': [
-                    'currency_id', 'email', 'street', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id',
-                    'country_id', 'state_id', 'tax_calculation_rounding_method', 'nomenclature_id', 'point_of_sale_use_ticket_qr_code',
-                    'point_of_sale_ticket_unique_code', 'account_fiscal_country_id',
-                ],
-            }
-        }

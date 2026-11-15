@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('header-row')]/div[@name='delete']" position="before">
+            <div class="col p-2">Invoice No.</div>
+        </xpath>
+        <xpath expr="//t[@t-if='!ui.isSmall']/div[hasclass('order-row')]/div[@name='delete']" position="before">
+            <div class="col p-2 ve-mf-invoice-number"><t t-esc="order.mf_invoice_number or ''"/></div>
+        </xpath>
+        <!-- With a fiscal printer the documents are the fiscal ones: no backend invoice nor receipt copy. -->
+        <xpath expr="//InvoiceButton" position="attributes">
+            <attribute name="t-if">!pos.useFiscalMachine()</attribute>
+        </xpath>
+        <xpath expr="//button[contains(@t-on-click, 'doPrint')]" position="attributes">
+            <attribute name="t-if">!pos.useFiscalMachine()</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+            <ReprintInvoiceButton t-if="_selectedSyncedOrder.mf_invoice_number and pos.useFiscalMachine()" order="_selectedSyncedOrder"/>
+        </xpath>
+    </t>
+</templates>

@@ -770,6 +770,13 @@ msgstr "Resultado"
 #. odoo-python
 #: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
 #, python-format
+msgid "There is no result account to close the account %(account)s."
+msgstr "No hay cuenta de resultado para cerrar la cuenta %(account)s."
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#, python-format
 msgid "Se encontraron uno o más movimientos sin asentar: \n"
 msgstr ""
 

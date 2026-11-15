@@ -145,14 +145,16 @@ msgid "Fiscal Data Module"
 msgstr "Módulo de Datos Fiscales"
 
 #. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/debug/debug_widget.xml:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/navbar.xml:0
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos_mf.view_res_config_settings_pos_mf
 msgid "Fiscal Machine"
 msgstr "Máquina Fiscal"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/FiscalMachinePopup.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.xml:0
 msgid "Fiscal Reports"
 msgstr "Reportes Fiscales"
 
@@ -206,9 +208,9 @@ msgstr "Maquina Fiscal"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
 msgid "Internal MF error"
 msgstr "Error interno de MF"
 
@@ -252,9 +254,9 @@ msgstr "Última actualización en"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.js:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
 msgid "MF error"
 msgstr "Error de MF"
 
@@ -333,16 +335,15 @@ msgstr "Reporte X"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/xml/ClosePosPopup.xml:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/debug/debug_widget.xml:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.xml:0
 msgid "Report X"
 msgstr "Reporte X"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/xml/ClosePosPopup.xml:0
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.xml:0
 #: model:ir.model.fields,field_description:l10n_ve_pos_mf.field_pos_session__report_z
-#, python-format
 msgid "Report Z"
 msgstr "Reporte Z"
 
@@ -374,8 +375,7 @@ msgstr ""
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/xml/ReprintInvoiceButton.xml:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/reprint_invoice_button/reprint_invoice_button.xml:0
 msgid "Reprint Document"
 msgstr "Reimprimir Documento"
 
@@ -426,21 +426,114 @@ msgstr "Wizard para descargar xlsx de libro de ventas POS"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
 msgid "Error connecting to the fiscal machine, check if it is turned on or connected to the IoT"
 msgstr "Error con la conexión a la máquina fiscal, verifique si está encendida o conectada al IoT"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
 msgid "The tax machine did not respond in time"
 msgstr "La máquina fiscal no respondió a tiempo"
 
 #. module: l10n_ve_pos_mf
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_mf/static/src/js/PosState.js:0
-#, python-format
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
 msgid "Error with the tax machine"
 msgstr "Error con la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/navbar.js:0
+msgid "Check that it is turned on and connected to the IoT Box."
+msgstr "Verifique que esté encendida y conectada al IoT Box."
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.xml:0
+msgid "Close"
+msgstr "Cerrar"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/navbar.xml:0
+msgid "Fiscal Machine Reports"
+msgstr "Reportes de la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/screens/receipt_screen.xml:0
+msgid "Fiscal machine serial:"
+msgstr "Serial de la máquina fiscal:"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/screens/ticket_screen.xml:0
+msgid "Invoice No."
+msgstr "N.º de factura"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/screens/receipt_screen.xml:0
+msgid "Invoice number:"
+msgstr "Número de factura:"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/fiscal_reports.js:0
+msgid "No connection to the fiscal machine"
+msgstr "Sin conexión con la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/pos_store.js:0
+msgid "No fiscal machine is configured"
+msgstr "No hay una máquina fiscal configurada"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.xml:0
+msgid "Print the X report"
+msgstr "Imprimir el reporte X"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/closing_popup.xml:0
+msgid "Print the Z report"
+msgstr "Imprimir el reporte Z"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/debug/debug_widget.xml:0
+msgid "Programming"
+msgstr "Programación"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/fiscal_reports.js:0
+msgid "The Z report could not be printed"
+msgstr "No se pudo imprimir el reporte Z"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/navbar/navbar.js:0
+msgid "The fiscal machine could not be reached"
+msgstr "No se pudo conectar con la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.xml:0
+msgid "X Report"
+msgstr "Reporte X"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/components/fiscal_reports_popup/fiscal_reports_popup.xml:0
+msgid "Z Report"
+msgstr "Reporte Z"
+
+#. module: l10n_ve_pos_mf
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf/static/src/app/screens/receipt_screen.xml:0
+msgid "Z report:"
+msgstr "Reporte Z:"

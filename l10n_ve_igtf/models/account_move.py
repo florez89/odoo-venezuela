@@ -87,6 +87,7 @@ class AccountMove(models.Model):
                         #-----------------BINAURAL--------------
                         'currency_id': move.company_id.currency_id.id if reconciled_partial['is_exchange'] else reconciled_partial['currency'].id,
                         'date': counterpart_line.date,
+                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
                         'partial_id': reconciled_partial['partial_id'],
                         'account_payment_id': counterpart_line.payment_id.id,
                         'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
@@ -120,9 +121,9 @@ class AccountMove(models.Model):
             amount = 0
             if line_id:
                 line = self.env["account.move.line"].browse([line_id])
-                payment_id = line.move_id.payment_id
+                payment_id = line.move_id.origin_payment_id
                 if payment_id and payment_id.is_igtf_on_foreign_exchange:
-                    payment_id = line.move_id.payment_id
+                    payment_id = line.move_id.origin_payment_id
                     bi_igtf = payment_id.get_bi_igtf()
                     if initial_residual <= bi_igtf and bi_igtf >= record.amount_total:
                         record.bi_igtf = min(record.bi_igtf + bi_igtf,record.amount_total)

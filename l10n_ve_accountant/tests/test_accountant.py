@@ -16,7 +16,7 @@ class TestAccountant(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.company.write({
             "currency_id": self.currency_usd.id,
-            "currency_foreign_id": self.currency_vef.id,
+            "foreign_currency_id": self.currency_vef.id,
         })
         self.Journal = self.env['account.journal']
         self.Move = self.env['account.move']
@@ -154,22 +154,26 @@ class TestAccountant(TransactionCase):
 
         # (Opcional) Si tu módulo de anticipos exige cuentas específicas:
         # Cuentas de anticipo en la compañía (tipos modernos v16/v17: account_type)
-        if not getattr(self.company, 'advance_customer_account_id', False) or not getattr(self.company, 'advance_supplier_account_id', False):
-            adv_cust = self.env['account.account'].search([('code', '=', '900000'), ('company_id', '=', self.company.id)], limit=1) or \
+        # The advance accounts come from an optional advance payments module: getattr on a
+        # record without the field falls back to False, so check the field exists first.
+        if 'advance_customer_account_id' in self.company._fields and (
+            not self.company.advance_customer_account_id or not self.company.advance_supplier_account_id
+        ):
+            adv_cust = self.env['account.account'].search([('code', '=', '900000'), ('company_ids', 'in', self.company.id)], limit=1) or \
                 self.env['account.account'].create({
                     'name': 'Advance Customers',
                     'code': '900000',
                     'account_type': 'liability_current',
                     'reconcile': True,
-                    'company_id': self.company.id,
+                    'company_ids': [self.company.id],
                 })
-            adv_supp = self.env['account.account'].search([('code', '=', '900001'), ('company_id', '=', self.company.id)], limit=1) or \
+            adv_supp = self.env['account.account'].search([('code', '=', '900001'), ('company_ids', 'in', self.company.id)], limit=1) or \
                 self.env['account.account'].create({
                     'name': 'Advance Suppliers',
                     'code': '900001',
                     'account_type': 'asset_current',
                     'reconcile': True,
-                    'company_id': self.company.id,
+                    'company_ids': [self.company.id],
                 })
             self.company.write({
                 'advance_customer_account_id': adv_cust.id,
@@ -361,6 +365,8 @@ class TestAccountant(TransactionCase):
             'code': 'VSN',
             # leave default_account_id unset on purpose
         })
+        # Odoo 18 fills the default account of a new sale journal at creation: remove it.
+        j_no_income.default_account_id = False
 
         display_value = 'product' if self.display_supports_product else False
         if not self.display_supports_product:

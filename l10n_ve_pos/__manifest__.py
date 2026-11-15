@@ -40,5 +40,8 @@
             "l10n_ve_pos/static/src/**/**",
             "l10n_ve_pos/static/src/**/**/**/*",
         ],
+        "web.assets_tests": [
+            "l10n_ve_pos/static/tests/tours/**/*",
+        ],
     },
 }

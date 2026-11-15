@@ -12,12 +12,12 @@
                             <field name="invoice_type_selection" widget='radio'/>
                         </group>
                         <field name="pickings_ids">
-                            <tree>
+                            <list>
                                 <field name='guide_number'/>
                                 <field name='partner_id'/>
                                 <field name='state_guide_dispatch'/>
                                 <field name='transfer_reason_id'/>
-                            </tree>
+                            </list>
                         </field>
                     </group>
                 </sheet>
@@ -31,14 +31,13 @@
         </field>
     </record>
 
-    <act_window
-            id="action_picking_multi_invoice"
-            name="Create Invoices"
-            res_model="picking.invoice.wizard"
-            binding_model="stock.picking"
-            binding_views="list"
-            view_mode="form"
-            target="new"
-    />
+    <record id="action_picking_multi_invoice" model="ir.actions.act_window">
+        <field name="name">Create Invoices</field>
+        <field name="res_model">picking.invoice.wizard</field>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_view_types">list</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
 
 </odoo>

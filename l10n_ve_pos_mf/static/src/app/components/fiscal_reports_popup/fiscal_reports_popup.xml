@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf.FiscalReportsPopup">
+        <Dialog title.translate="Fiscal Reports" size="'md'">
+            <div class="fdm-reports d-flex gap-2">
+                <button class="btn btn-secondary btn-lg flex-grow-1" t-on-click="reportZ">Z Report</button>
+                <button class="btn btn-secondary btn-lg flex-grow-1" t-on-click="reportX">X Report</button>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

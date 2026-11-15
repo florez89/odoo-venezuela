@@ -12,61 +12,52 @@ _logger = logging.getLogger(__name__)
 class AccountFiscalyearClosingConfig(models.Model):
     _inherit = "account.fiscalyear.closing.config"
 
+    l_map = fields.Boolean(string="Load Accounts")
+
     @api.onchange("l_map")
     def onchange_l_map(self):
-        accounts = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    (
-                        "account_type",
-                        "in",
-                        [
-                            "income",
-                            "expense",
-                            "income_other",
-                            "expense_depreciation",
-                            "expense_direct_cost",
-                        ],
-                    ),
-                    ("company_id", "in", [self.env.company.id, False]),
-                ]
-            )
-        )
-
-        config_a = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.env.company.id, False]),
-                ],
-                limit=1,
-            )
-        )  # esta es la de destino siempre es la misma preguntar cual es
-        maps = []
-        cont = 1
-        if self.l_map:
-            # sync
-            for a in accounts:
-                if len(a.code):
-                    vals = {
-                        "name": a.name,
-                        "src_accounts": a.code,
-                        "dest_account_id": config_a.id,
-                        "fyc_config_id": self.id,
-                    }
-                    cont += 1
-                    maps.append((0, 0, vals))
-            if len(maps) > 0:
-                # self.update({'mapping_ids':maps})
-                return {"value": {"mapping_ids": maps}}
-        else:
+        if not self.l_map:
             return {"value": {"mapping_ids": [(5, 0, 0)]}}
-
-    l_map = fields.Boolean(string="Load Accounts")
+        company = self.fyc_id.company_id or self.env.company
+        Account = self.env["account.account"].sudo().with_company(company)
+        company_domain = Account._check_company_domain(company)
+        accounts = Account.search(
+            company_domain
+            + [
+                (
+                    "account_type",
+                    "in",
+                    [
+                        "income",
+                        "expense",
+                        "income_other",
+                        "expense_depreciation",
+                        "expense_direct_cost",
+                    ],
+                ),
+            ]
+        )
+        # the destination is always the current year earnings account
+        config_a = Account.search(
+            company_domain + [("account_type", "=", "equity_unaffected")],
+            limit=1,
+        )
+        maps = [
+            (
+                0,
+                0,
+                {
+                    "name": account.name,
+                    "src_accounts": account.code,
+                    "dest_account_id": config_a.id,
+                    "fyc_config_id": self.id,
+                },
+            )
+            for account in accounts
+            if account.code
+        ]
+        if maps:
+            return {"value": {"mapping_ids": maps}}
 
     def move_prepare(self, move_lines, rate=0):
         self.ensure_one()
@@ -92,24 +83,17 @@ class AccountFiscalyearClosingConfig(models.Model):
         dest = account_map.dest_account_id
         dest_totals.setdefault(dest, 0)
         # aqui filtrar si viene src usar solo esa
+        company = self.fyc_id.company_id
+        Account = self.env["account.account"].with_company(company)
+        company_domain = Account._check_company_domain(company)
         if not src:
-            src_accounts = self.env["account.account"].search(
-                [
-                    ("company_id", "=", self.fyc_id.company_id.id),
-                    ("code", "=ilike", account_map.src_accounts),
-                ],
+            src_accounts = Account.search(
+                company_domain + [("code", "=ilike", account_map.src_accounts)],
                 order="code ASC",
             )
         else:
-            src_accounts = (
-                self.env["account.account"]
-                .sudo()
-                .search(
-                    [
-                        ("company_id", "=", self.fyc_id.company_id.id),
-                        ("code", "=ilike", src),
-                    ]
-                )
+            src_accounts = Account.sudo().search(
+                company_domain + [("code", "=ilike", src)]
             )
         for account in src_accounts:
             closing_type = self.closing_type_get(account)
@@ -166,80 +150,111 @@ class AccountFiscalyearClosing(models.Model):
                 raise ValidationError(msg)
         return True
 
+    def _moves_remove(self):
+        # l10n_ve_accountant's button_draft handles one move at a time, so the
+        # posted moves go back to draft one by one before the generic removal.
+        for move in self.move_ids.filtered(lambda move: move.state == "posted"):
+            move.button_draft()
+        return super()._moves_remove()
+
     def button_post(self):
         for closing in self:
             closing.move_ids.action_post()
         return super().button_post()
 
-    # Todo el registro de las cuentas esta en esta funcion
     def calculate(self):
-        dest_account = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    ("account_type", "=", "equity_unaffected"),
-                    ("company_id", "in", [self.company_id.id, False]),
-                ],
-                limit=1,
-            )
-        )
-        currencies = {
-            "bsd_id": self.env.ref("base.VEF"),
-            "foreign_currency": self.env.company.currency_foreign_id,
-        }
+        """Close every mapped account into the result account of its mapping.
 
+        Each source account gets its own move so that the move rate converts
+        the account balance into its foreign balance, zeroing both.
+        """
         for closing in self:
             # Perform checks, raise exception if check fails
             if closing.check_draft_moves:
                 closing.draft_moves_check()
 
             for config in closing.move_config_ids.filtered("enabled"):
-                balances = self._get_balances(config)
-                self._create_closing_moves(config, balances, dest_account, currencies)
+                closing._create_closing_moves(config, closing._get_balances(config))
 
         return True
 
-    def _get_balances(self, config):
-        src_accounts = self.env["account.account"].search(
-            [
-                ("company_id", "=", self.company_id.id),
-                ("code", "in", config.mapping_ids.mapped("src_accounts")),
-            ],
-            order="code ASC",
+    def _get_default_result_account(self):
+        """Current year earnings account, used by mappings without destination."""
+        self.ensure_one()
+        Account = self.env["account.account"].sudo().with_company(self.company_id)
+        return Account.search(
+            Account._check_company_domain(self.company_id)
+            + [("account_type", "=", "equity_unaffected")],
+            limit=1,
         )
+
+    def _get_balances(self, config):
+        """Return [(account, result account, balance, foreign balance)] of the
+        accounts mapped by `config` over the closed period."""
+        self.ensure_one()
+        Account = self.env["account.account"].with_company(self.company_id)
+        company_domain = Account._check_company_domain(self.company_id)
+        default_dest = self._get_default_result_account()
+        dest_by_account = {}
+        for mapping in config.mapping_ids:
+            src_accounts = Account.search(
+                company_domain + [("code", "=ilike", mapping.src_accounts)],
+                order="code ASC",
+            )
+            for account in src_accounts:
+                dest_by_account.setdefault(
+                    account, mapping.dest_account_id or default_dest
+                )
+        if not dest_by_account:
+            return []
 
         domain = [
             ("company_id", "=", self.company_id.id),
-            ("account_id", "in", src_accounts.ids),
+            ("account_id", "in", [account.id for account in dest_by_account]),
             ("date", ">=", self.date_start),
             ("date", "<=", self.date_end),
             ("move_id.state", "!=", "cancel"),
         ]
-
-        balances = self.env["account.move.line"].read_group(
-            domain=domain,
-            fields=["balance", "foreign_balance", "account_id"],
+        # foreign debit/credit rather than foreign_balance: the stored
+        # foreign_balance of some invoice lines is left empty by
+        # l10n_ve_accountant while their foreign debit/credit are right.
+        groups = self.env["account.move.line"]._read_group(
+            domain,
             groupby=["account_id"],
+            aggregates=["balance:sum", "foreign_debit:sum", "foreign_credit:sum"],
         )
-        return balances
+        return [
+            (account, dest_by_account[account], balance, foreign_debit - foreign_credit)
+            for account, balance, foreign_debit, foreign_credit in sorted(
+                groups, key=lambda group: group[0].code or ""
+            )
+        ]
 
-    def _create_closing_moves(self, config, balances, dest_account, currencies):
+    def _create_closing_moves(self, config, balances):
+        self.ensure_one()
+        currency = self.company_id.currency_id
+        foreign_currency = self.company_id.foreign_currency_id
+        is_usd = foreign_currency == self.env.ref("base.USD", raise_if_not_found=False)
         vals = []
 
-        for balance_dict in balances:
-            balance = balance_dict.get("balance", 0)
-            foreign_balance = balance_dict.get("foreign_balance", 0)
-            if (currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0) or (
-                currencies["bsd_id"] != currencies["foreign_currency"] and foreign_balance == 0
-            ):
+        for account, dest_account, balance, foreign_balance in balances:
+            if currency.is_zero(balance):
                 continue
-
-            rate = abs(
-                foreign_balance / balance
-                if currencies["bsd_id"] == currencies["foreign_currency"]
-                else balance / foreign_balance
-            )
+            if not dest_account:
+                raise ValidationError(
+                    _(
+                        "There is no result account to close the account %(account)s.",
+                        account=account.display_name,
+                    )
+                )
+            # Factor that turns the closed balance into its foreign balance.
+            # The shown rate follows res.currency.rate.compute_rate: inverse
+            # company rate for USD, company rate for any other currency.
+            inverse_rate = abs(foreign_balance / balance)
+            if is_usd:
+                rate = 1 / inverse_rate if inverse_rate else 0.0
+            else:
+                rate = inverse_rate
 
             vals.append(
                 {
@@ -248,20 +263,18 @@ class AccountFiscalyearClosing(models.Model):
                     "fyc_id": self.id,
                     "closing_type": config.move_type,
                     "journal_id": config.journal_id.id,
+                    "foreign_currency_id": foreign_currency.id,
                     "manually_set_rate": True,
                     "foreign_rate": rate,
-                    "foreign_inverse_rate": (
-                        rate if currencies["bsd_id"] == currencies["foreign_currency"] else 1 / rate
-                    ),
+                    "foreign_inverse_rate": inverse_rate,
                     "line_ids": [
                         (
                             0,
                             0,
                             {
-                                "account_id": balance_dict["account_id"][0],
+                                "account_id": account.id,
                                 "balance": -balance,
                                 "name": config.name,
-                                "date": config.date,
                             },
                         ),
                         (
@@ -271,13 +284,12 @@ class AccountFiscalyearClosing(models.Model):
                                 "account_id": dest_account.id,
                                 "balance": balance,
                                 "name": _("Result"),
-                                "date": config.date,
                             },
                         ),
                     ],
                 }
             )
-        self.env["account.move"].create(vals)
+        return self.env["account.move"].create(vals)
 
 
 class AccountFiscalyearClosingMapping(models.Model):

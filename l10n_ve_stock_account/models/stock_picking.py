@@ -515,7 +515,7 @@ class StockPicking(models.Model):
 
     def get_foreign_currency_is_vef(self):
 
-        res = self.company_id.currency_foreign_id == self.env.ref("base.VEF")
+        res = self.company_id.foreign_currency_id == self.env.ref("base.VEF")
         return res
 
     # === METHODS ===#
@@ -599,7 +599,7 @@ class StockPicking(models.Model):
         return {
             "name": _("Invoices"),
             "type": "ir.actions.act_window",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "res_model": "account.move",
             "domain": [("transfer_ids", "in", self.id)],
             "context": {"create": False},
@@ -1170,14 +1170,18 @@ class StockPicking(models.Model):
 
         return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}. De facturarse en el siguiente periodo el Seniat será Notificado."
     def get_foreign_currency_is_vef(self):
-        return self.env.company.currency_foreign_id == self.env.ref("base.VEF")
+        return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
 
     @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
     def _compute_partner_required(self):
-        consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment')
+        # The reason is not loaded yet when the column is computed for existing pickings at install.
+        consignment_reason = self.env.ref(
+            'l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False
+        )
         for picking in self:
-            picking.partner_required = (
-                picking.transfer_reason_id.id == consignment_reason.id
+            picking.partner_required = bool(
+                consignment_reason
+                and picking.transfer_reason_id.id == consignment_reason.id
                 and picking.is_dispatch_guide
                 and picking.is_consignment
             )

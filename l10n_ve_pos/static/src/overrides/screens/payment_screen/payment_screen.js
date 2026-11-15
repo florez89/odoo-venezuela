@@ -1,121 +1,82 @@
-/** @odoo-module */
-
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
-import { patch } from "@web/core/utils/patch";
-import { _t } from "@web/core/l10n/translation";
-import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { SelectionPopup } from "@point_of_sale/app/utils/input_popups/selection_popup";
-import { useEnv } from "@odoo/owl";
+import { makeAwaitable } from "@point_of_sale/app/store/make_awaitable_dialog";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { _t } from "@web/core/l10n/translation";
+import { patch } from "@web/core/utils/patch";
 
-// New orders are now associated with the current table, if any.
 patch(PaymentScreen.prototype, {
+    shouldDownloadInvoice() {
+        // Venezuelan invoices are printed by the fiscal printer.
+        return false;
+    },
 
-  setup(){
-    super.setup(...arguments)
-    this.utils = useEnv().utils
-  },
-  shouldDownloadInvoice() {
-    return false;
-  },
-  updateSelectedPaymentline(amount = false) {
-    if (this.paymentLines.every((line) => line.paid)) {
-      this.currentOrder.add_paymentline(this.payment_methods_from_config[0]);
-    }
-    if (!this.selectedPaymentLine) {
-      return;
-    } // do nothing if no selected payment line
+    /** The amount typed on a foreign currency method is in that currency. */
+    updateSelectedPaymentline(amount = false) {
+        const line = this.selectedPaymentLine;
+        if (!line || !line.payment_method_id.is_foreign_currency || !this.pos.foreignCurrency) {
+            return super.updateSelectedPaymentline(...arguments);
+        }
+        if (amount === false) {
+            if (this.numberBuffer.get() === null) {
+                amount = null;
+            } else if (this.numberBuffer.get() === "") {
+                amount = 0;
+            } else {
+                amount = this.numberBuffer.getFloat();
+            }
+        }
+        const paymentTerminal = line.payment_method_id.payment_terminal;
+        if (paymentTerminal && !["pending", "retry"].includes(line.get_payment_status())) {
+            return;
+        }
+        if (amount === null) {
+            this.deletePaymentLine(line.uuid);
+        } else {
+            line.set_foreign_amount(amount);
+        }
+    },
 
-    // >>  BINAURAL
-    if (!this.selectedPaymentLine.payment_method.is_foreign_currency) {
-      return super.updateSelectedPaymentline(amount);
-    }
+    async _isOrderValid(isForceValidate) {
+        const order = this.currentOrder;
+        if (
+            order &&
+            order.get_total_with_tax() !== 0 &&
+            order.payment_ids.some((line) => !line.is_change && !line.get_amount())
+        ) {
+            this.dialog.add(AlertDialog, {
+                title: _t("Empty Paymentline"),
+                body: _t("You can't validate with empty payment lines"),
+            });
+            return false;
+        }
+        return super._isOrderValid(...arguments);
+    },
 
-    if (amount === false) {
-      if (this.numberBuffer.get() === null) {
-        amount = null;
-      } else if (this.numberBuffer.get() === "") {
-        amount = 0;
-      } else {
-        amount = this.numberBuffer.getFloat();
-      }
-    }
+    get refundedOrder() {
+        return this.currentOrder?.lines.find((line) => line.refunded_orderline_id)
+            ?.refunded_orderline_id?.order_id;
+    },
 
-    // disable changing amount on paymentlines with running or done payments on a payment terminal
-    const payment_terminal = this.selectedPaymentLine.payment_method.payment_terminal;
-    const hasCashPaymentMethod = this.payment_methods_from_config.some(
-      (method) => method.type === "cash"
-    );
-    if (
-      !hasCashPaymentMethod &&
-      amount > this.currentOrder.get_due() + this.selectedPaymentLine.amount
-    ) {
-      this.selectedPaymentLine.set_amount(0);
-      this.numberBuffer.set(this.currentOrder.get_due().toString());
-      amount = this.currentOrder.get_due();
-      this.showMaxValueError();
-    }
-    if (
-      payment_terminal &&
-      !["pending", "retry"].includes(this.selectedPaymentLine.get_payment_status())
-    ) {
-      return;
-    }
-    if (amount === null) {
-      this.deletePaymentLine(this.selectedPaymentLine.cid);
-    } else {
-      if (this.selectedPaymentLine.payment_method.is_foreign_currency) {
-        this.selectedPaymentLine.set_foreign_amount(amount);
-      } else {
-        this.selectedPaymentLine.set_amount(amount);
-      }
-    }
-  },
-  toggleIsToInvoice() {
-    this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
-  },
-  async _isOrderValid(isForceValidate) {
-    let res = await super._isOrderValid(isForceValidate)
-    if (!this.currentOrder) {
-      return res
-    }
-
-    let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
-    if (!amounts.every((el) => el != 0 && this.currentOrder.get_total_with_tax() !== 0)) {
-      this.popup.add(ErrorPopup, {
-        title: _t('Empty Paymentline'),
-        body: _t(
-          "You can't validate with empty payment lines"),
-      })
-      return false
-    }
-    return res
-  },
-  async showPaymentsOrigin() {
-    let id = []
-    if (Object.values(this.pos.toRefundLines).length == 0) {
-      return
-    }
-    Object.values(this.pos.toRefundLines).forEach(el => {
-      id = el.orderline.orderBackendId
-    })
-
-    const payments = await this.orm.call('pos.order', 'get_payments_order_refund', [id]);
-
-    let payment_list = payments.map(el => {
-      return {
-        id: el.id,
-        label: el.payment_method_id[1] + " " + el.display_name + " / " + this.utils.formatForeignCurrency(el.foreign_amount),
-        isSelected: false,
-        item: el,
-      }
-
-    })
-    await this.popup.add(
-      SelectionPopup,
-      {
-        title: _t("Payments"),
-        list: payment_list,
-      }
-    )
-  }
-})
+    /** Show the payments of the refunded order (method and foreign amount). */
+    async showPaymentsOrigin() {
+        const refundedOrder = this.refundedOrder;
+        if (!refundedOrder || typeof refundedOrder.id !== "number") {
+            return;
+        }
+        const payments = await this.pos.data.call("pos.order", "get_payments_order_refund", [
+            [refundedOrder.id],
+        ]);
+        await makeAwaitable(this.dialog, SelectionPopup, {
+            title: _t("Payments"),
+            list: payments.map((payment) => ({
+                id: payment.id,
+                label: `${payment.payment_method_id[1]} ${
+                    payment.display_name
+                } / ${this.env.utils.formatForeignCurrency(payment.foreign_amount)}`,
+                isSelected: false,
+                item: payment,
+            })),
+        });
+    },
+});

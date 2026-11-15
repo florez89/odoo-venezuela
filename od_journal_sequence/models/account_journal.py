@@ -4,6 +4,24 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
 
+def prepare_journal_sequence_vals(env, vals, refund=False):
+    """Values of the `ir.sequence` numbering a journal (or its refunds).
+
+    Module-level so the pre-init hook can use it before the model extension
+    is loaded.
+    """
+    code = vals.get("code") and vals["code"].upper() or ""
+    prefix = "%s%s/%%(range_year)s/" % (refund and "R" or "", code)
+    return {
+        "name": "%s %s" % (vals.get("name", env._("Sequence")), refund and env._("Refund") + " " or ""),
+        "company_id": vals.get("company_id") or env.company.id,
+        "implementation": "no_gap",
+        "prefix": prefix,
+        "padding": 4,
+        "use_date_range": True,
+    }
+
+
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
@@ -102,18 +120,7 @@ class AccountJournal(models.Model):
 
     @api.model
     def _prepare_sequence(self, vals, refund=False):
-        code = vals.get("code") and vals["code"].upper() or ""
-        prefix = "%s%s/%%(range_year)s/" % (refund and "R" or "", code)
-        seq_vals = {
-            "name": "%s %s"
-                    % (vals.get("name", _("Sequence")), refund and _("Refund") + " " or ""),
-            "company_id": vals.get("company_id") or self.env.company.id,
-            "implementation": "no_gap",
-            "prefix": prefix,
-            "padding": 4,
-            "use_date_range": True,
-        }
-        return seq_vals
+        return prepare_journal_sequence_vals(self.env, vals, refund=refund)
 
     @api.model
     def _create_sequence(self, vals, refund=False):

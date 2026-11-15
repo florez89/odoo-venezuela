@@ -50,10 +50,24 @@ class TestAccountRetentionSequence(TransactionCase):
                 "loss_account_id": loss_account.id,
             }
         )
+        # Odoo 18 only creates the journal entry of a payment when its payment method line
+        # has an outstanding account, and the retention is reconciled with that entry.
+        outstanding_account = self.env["account.account"].create(
+            {
+                "name": "Outstanding IVA retentions",
+                "code": "RETIVA01",
+                "account_type": "asset_current",
+                "reconcile": True,
+            }
+        )
+        (
+            self.iva_journal.inbound_payment_method_line_ids
+            | self.iva_journal.outbound_payment_method_line_ids
+        ).payment_account_id = outstanding_account
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_vef.id,
                 "iva_supplier_retention_journal_id": self.iva_journal.id,
             }
         )

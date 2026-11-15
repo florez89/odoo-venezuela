@@ -26,9 +26,10 @@
     ],
     "assets": {
         "point_of_sale._assets_pos": [
-            "l10n_ve_pos_mf/static/src/js/*.js",
-            "l10n_ve_pos_mf/static/src/xml/*.xml",
-            "l10n_ve_pos_mf/static/src/css/*.css",
+            "l10n_ve_pos_mf/static/src/**/*",
+        ],
+        "web.assets_tests": [
+            "l10n_ve_pos_mf/static/tests/tours/**/*",
         ],
     },
     "images": ["static/description/icon.png"],
